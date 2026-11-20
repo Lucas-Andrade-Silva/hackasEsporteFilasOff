@@ -11,6 +11,11 @@ ball_engine/data/videos/
 ball_engine/data/results/
 ball_engine/exports/
 ball_engine/data/annotations/
+pose_engine/data/videos/*
+pose_engine/data/results/*
+pose_engine/exports/*
+pose_engine/models/
+!pose_engine/**/.gitkeep
 
 # Python
 __pycache__/
