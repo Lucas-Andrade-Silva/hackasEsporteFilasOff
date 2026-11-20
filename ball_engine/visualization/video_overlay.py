@@ -1,0 +1,88 @@
+"""Desenho da trajetória sobre o vídeo e exportação do MP4 anotado."""
+from __future__ import annotations
+
+from collections import deque
+from pathlib import Path
+
+import cv2
+import numpy as np
+
+from core.schema import TrackingResult, SOURCE_INTERPOLATED, SOURCE_INPAINT
+
+# Cor por fonte (BGR)
+SOURCE_COLORS = {
+    "tracknet": (0, 255, 255),      # amarelo
+    "yolo": (0, 200, 0),            # verde
+    "color_shape": (255, 160, 0),   # azul-laranja
+    "inpaintnet": (200, 0, 200),    # magenta = estimado
+    "interpolated": (200, 0, 200),  # magenta = estimado
+    "none": (0, 0, 255),
+}
+
+
+def annotate_frame(
+    frame: np.ndarray,
+    records,
+    rec_idx: int,
+    trail: deque,
+    trail_len: int = 20,
+) -> np.ndarray:
+    """Desenha bola + trilha + rótulo de fonte/confiança no frame."""
+    rec = records[rec_idx]
+    d = rec.ball
+    if d.visibility and d.x is not None:
+        trail.appendleft((int(d.x), int(d.y), d.estimated))
+    if len(trail) > trail_len:
+        trail.pop()
+
+    # Trilha (detectado = linha cheia, estimado = pontos)
+    for k, (tx, ty, est) in enumerate(trail):
+        if est:
+            cv2.circle(frame, (tx, ty), 2, (200, 0, 200), -1)
+        else:
+            r = max(1, 4 - k // 6)
+            cv2.circle(frame, (tx, ty), r, (0, 255, 255), -1)
+
+    # Bola atual
+    if d.visibility and d.x is not None:
+        color = SOURCE_COLORS.get(d.source, (0, 255, 255))
+        cv2.circle(frame, (int(d.x), int(d.y)), 8, color, 2)
+        tag = f"{d.source} {d.confidence:.2f}" + (" [est]" if d.estimated else "")
+        cv2.putText(frame, tag, (int(d.x) + 12, int(d.y) - 8),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1, cv2.LINE_AA)
+    else:
+        cv2.putText(frame, "bola nao detectada", (10, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 1, cv2.LINE_AA)
+
+    cv2.putText(frame, f"f{rec.frame}  t={rec.timestamp:.2f}s", (10, 55),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (220, 220, 220), 1, cv2.LINE_AA)
+    return frame
+
+
+def write_annotated_video(
+    video_path: str,
+    result: TrackingResult,
+    out_path: str | Path,
+    trail_len: int = 20,
+) -> Path:
+    """Regrava o trecho processado com a trajetória sobreposta."""
+    out_path = Path(out_path)
+    cap = cv2.VideoCapture(str(video_path))
+    if result.processed_start:
+        cap.set(cv2.CAP_PROP_POS_FRAMES, result.processed_start)
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+    writer = cv2.VideoWriter(str(out_path), fourcc, result.fps,
+                             (result.width, result.height))
+    trail: deque = deque()
+    i = 0
+    while i < len(result.records):
+        ok, frame = cap.read()
+        if not ok:
+            break
+        frame = cv2.resize(frame, (result.width, result.height)) \
+            if (frame.shape[1], frame.shape[0]) != (result.width, result.height) else frame
+        writer.write(annotate_frame(frame, result.records, i, trail, trail_len))
+        i += 1
+    writer.release()
+    cap.release()
+    return out_path

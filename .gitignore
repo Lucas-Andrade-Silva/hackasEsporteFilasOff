@@ -1,0 +1,19 @@
+# Pesos e assets grandes (baixar via instruções do README)
+ball_engine/models/tracknet_v3_repo/ckpts/
+ball_engine/models/tracknet_v3_repo/*.zip
+*.pt
+*.pth
+*.onnx
+yolov8n.pt
+
+# Dados e saídas
+ball_engine/data/videos/
+ball_engine/data/results/
+ball_engine/exports/
+ball_engine/data/annotations/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+nul
