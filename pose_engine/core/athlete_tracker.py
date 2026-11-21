@@ -2,8 +2,9 @@
 
 `Tracker` é ABC para permitir troca futura por BoTSORTTracker/OCSORTTracker
 (mesmo pacote) quando a câmera se move — sem reescrever a pipeline.
-A associação track_id -> keypoints é feita por IoU da box, sem depender
-de internals do tracker.
+A associação track_id -> keypoints usa o índice original da detecção,
+carregado em `data["det_idx"]` (o ByteTrack devolve as detecções de entrada
+reindexadas). IoU fica só como fallback se o tracker descartar `data`.
 """
 from __future__ import annotations
 
@@ -11,6 +12,8 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 import supervision as sv
+
+from config.settings import TRACK_ACTIVATION, TRACK_HIGH_CONF
 
 
 class Tracker(ABC):
@@ -30,8 +33,8 @@ def _iou(a, b) -> float:
 
 class ByteTrackTracker(Tracker):
     def __init__(self, frame_rate: float = 30.0,
-                 track_activation_threshold: float = 0.5,
-                 high_conf_det_threshold: float = 0.6,
+                 track_activation_threshold: float = TRACK_ACTIVATION,
+                 high_conf_det_threshold: float = TRACK_HIGH_CONF,
                  minimum_consecutive_frames: int = 2,
                  lost_track_buffer: int = 30):
         from trackers import ByteTrackTracker as _ByteTrack
@@ -50,16 +53,25 @@ class ByteTrackTracker(Tracker):
             xyxy=np.stack([d.bbox for d in detections]),
             confidence=np.array([d.bbox_conf for d in detections],
                                 dtype=np.float32),
-            class_id=np.zeros(len(detections), dtype=int))
+            class_id=np.zeros(len(detections), dtype=int),
+            data={"det_idx": np.arange(len(detections))})
         tracked = self._bt.update(sv_dets)
         out = []
         if tracked.tracker_id is None:
             return out
-        for box, tid in zip(tracked.xyxy, tracked.tracker_id):
-            # tid -1 = detecção ainda não confirmada (warmup do tracker):
-            # o atleta só entra na saída quando a identidade é confirmada
+        det_idx = tracked.data.get("det_idx") if tracked.data else None
+        used = set()
+        for j, (box, tid) in enumerate(zip(tracked.xyxy, tracked.tracker_id)):
+            # tid -1 = detecção não confirmada (warmup) ou de baixa confiança
+            # sem track: o atleta só entra na saída com identidade confirmada
             if tid is None or int(tid) < 0:
                 continue
-            i = int(np.argmax([_iou(box, d.bbox) for d in detections]))
+            if det_idx is not None:
+                i = int(det_idx[j])
+            else:
+                i = int(np.argmax([_iou(box, d.bbox) for d in detections]))
+            if i in used:   # nunca duas identidades na mesma detecção
+                continue
+            used.add(i)
             out.append((int(tid), detections[i]))
         return out

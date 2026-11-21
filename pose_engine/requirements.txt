@@ -4,6 +4,7 @@ trackers>=2.7
 opencv-python>=4.7
 numpy>=1.24
 scipy>=1.10
+imageio-ffmpeg>=0.4
 pandas>=2.0
 streamlit>=1.30
 plotly>=5.18

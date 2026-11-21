@@ -48,3 +48,27 @@ def iter_frames(video_path, start_s=0.0, end_s=None):
         yield idx, idx / meta.fps, frame
         idx += 1
     cap.release()
+
+
+def to_browser_mp4(src, dst) -> bool:
+    """Reencoda `src` (mp4v do cv2) em H.264/yuv420p tocável no navegador.
+
+    O OpenCV do pip não traz encoder H.264 utilizável no Windows (falta a
+    DLL openh264), então usamos o ffmpeg empacotado pelo imageio-ffmpeg.
+    Retorna False (e não mexe em `src`) se o ffmpeg não estiver disponível
+    ou falhar — quem chama decide manter o mp4v.
+    """
+    import subprocess
+    try:
+        import imageio_ffmpeg
+        exe = imageio_ffmpeg.get_ffmpeg_exe()
+    except Exception:
+        return False
+    cmd = [exe, "-y", "-loglevel", "error", "-i", str(src),
+           "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "veryfast",
+           "-crf", "23", "-movflags", "+faststart", str(dst)]
+    try:
+        subprocess.run(cmd, check=True, capture_output=True, timeout=1800)
+    except (subprocess.SubprocessError, OSError):
+        return False
+    return True

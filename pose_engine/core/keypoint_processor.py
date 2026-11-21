@@ -2,15 +2,19 @@
 
 Regra por keypoint (spec: diferenciar detectado de estimado):
 - conf >= KEYPOINT_MIN_CONF  -> posição filtrada, estimated=False
-- conf <  min e com histórico -> posição do estado do filtro, estimated=True
-- conf <  min sem histórico  -> estimated=True e confidence=0 (não entra em contas)
+- conf <  min e com histórico -> posição do estado do filtro, estimated=True,
+                                 por no máximo MAX_ESTIMATED_FRAMES seguidos
+- conf <  min sem histórico ou oculto há mais tempo
+                              -> estimated=True e confidence=0 (não entra em contas)
+Ao reaparecer depois de um buraco maior que o limite, o filtro reinicia
+(evita arrastar o ponto a partir de uma posição velha).
 """
 from __future__ import annotations
 
 import math
 
-from config.settings import (KEYPOINT_MIN_CONF, ONE_EURO_BETA,
-                             ONE_EURO_MIN_CUTOFF)
+from config.settings import (KEYPOINT_MIN_CONF, MAX_ESTIMATED_FRAMES,
+                             ONE_EURO_BETA, ONE_EURO_MIN_CUTOFF)
 from core.schema import Keypoint
 
 MIN_UPDATES = 2  # histórico mínimo para usar a estimativa do filtro
@@ -61,6 +65,7 @@ class _OneEuro2D:
     def __init__(self, **kw):
         self.fx = OneEuroFilter(**kw)
         self.fy = OneEuroFilter(**kw)
+        self.missing = 0   # frames seguidos sem detecção confiável
 
     @property
     def updates(self) -> int:
@@ -79,8 +84,10 @@ class KeypointProcessor:
 
     def __init__(self, min_conf: float = KEYPOINT_MIN_CONF,
                  min_cutoff: float = ONE_EURO_MIN_CUTOFF,
-                 beta: float = ONE_EURO_BETA, dt: float = 1 / 30):
+                 beta: float = ONE_EURO_BETA, dt: float = 1 / 30,
+                 max_estimated: int = MAX_ESTIMATED_FRAMES):
         self.min_conf = min_conf
+        self.max_estimated = max_estimated
         self.dt = dt
         self._kw = {"min_cutoff": min_cutoff, "beta": beta}
         self._filters: dict[int, dict[str, _OneEuro2D]] = {}
@@ -90,13 +97,17 @@ class KeypointProcessor:
         out = []
         for k in kpts:
             f = track.get(k.name)
-            if f is None:
+            if f is None or (k.confidence >= self.min_conf
+                             and f.missing > self.max_estimated):
                 f = track[k.name] = _OneEuro2D(**self._kw)
             if k.confidence >= self.min_conf:
+                f.missing = 0
                 x, y = f(k.x, k.y, self.dt)
                 out.append(Keypoint(k.name, x, y, k.confidence,
                                     estimated=False))
-            elif f.updates >= MIN_UPDATES:
+                continue
+            f.missing += 1
+            if f.updates >= MIN_UPDATES and f.missing <= self.max_estimated:
                 x, y = f.value
                 out.append(Keypoint(k.name, x, y, k.confidence,
                                     estimated=True))

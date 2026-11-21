@@ -50,3 +50,22 @@ def test_prune_remove_tracks_ausentes():
     p.process(2, k)
     p.prune({1})
     assert 1 in p._filters and 2 not in p._filters
+
+
+def test_estimated_expira_apos_limite():
+    p = KeypointProcessor(max_estimated=3)
+    for _ in range(5):
+        p.process(1, [Keypoint("nose", 100, 100, 0.9)])
+    outs = [p.process(1, [Keypoint("nose", 0, 0, 0.1)])[0] for _ in range(5)]
+    assert all(o.estimated for o in outs)
+    assert [o.confidence > 0 for o in outs] == [True, True, True, False, False]
+
+
+def test_filtro_reinicia_apos_buraco_longo():
+    p = KeypointProcessor(max_estimated=3)
+    for _ in range(5):
+        p.process(1, [Keypoint("nose", 100, 100, 0.9)])
+    for _ in range(5):
+        p.process(1, [Keypoint("nose", 0, 0, 0.1)])
+    out = p.process(1, [Keypoint("nose", 400, 300, 0.9)])[0]
+    assert (out.x, out.y) == (400, 300) and not out.estimated

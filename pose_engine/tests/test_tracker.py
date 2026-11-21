@@ -53,3 +53,31 @@ def test_id_sobrevive_a_oclusao_curta():
 def test_sem_deteccoes_retorna_vazio():
     trk = ByteTrackTracker(minimum_consecutive_frames=1)
     assert trk.update([]) == []
+
+
+def test_deteccao_fraca_mantem_track_existente():
+    """2ª etapa do ByteTrack: conf baixa continua um track, não cria outro."""
+    trk = ByteTrackTracker(minimum_consecutive_frames=1)
+    ids = []
+    for i in range(30):
+        conf = 0.3 if 10 <= i < 20 else 0.9   # oclusão parcial -> conf baixa
+        out = trk.update([_det(100 + i * 2, 200, conf=conf)])
+        ids.append(out[0][0] if out else None)
+    confirmados = [t for t in ids[1:] if t is not None]
+    assert len(confirmados) == 29 and len(set(confirmados)) == 1
+
+
+def test_deteccao_fraca_isolada_nao_cria_id():
+    trk = ByteTrackTracker(minimum_consecutive_frames=1)
+    for _ in range(5):
+        assert trk.update([_det(300, 200, conf=0.3)]) == []
+
+
+def test_mapeia_pela_deteccao_original():
+    """Duas detecções sobrepostas: cada ID recebe a sua, nunca a mesma."""
+    trk = ByteTrackTracker(minimum_consecutive_frames=1)
+    for i in range(10):
+        a, b = _det(200, 200), _det(215, 205)
+        out = trk.update([a, b])
+    assert len(out) == 2
+    assert {id(d) for _, d in out} == {id(a), id(b)}

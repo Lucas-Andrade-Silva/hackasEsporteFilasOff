@@ -30,11 +30,20 @@ def carregar_estimador():
 st.sidebar.header("Configuração")
 sport = st.sidebar.selectbox("Esporte", SPORTS)
 upload = st.sidebar.file_uploader("Vídeo", type=["mp4", "avi", "mov"])
+salvos = sorted(p.name for p in VIDEO_DIR.iterdir()
+                if p.suffix.lower() in (".mp4", ".avi", ".mov"))
 
+video_path = None
 if upload is not None:
     video_path = VIDEO_DIR / upload.name
-    if not video_path.exists():
-        video_path.write_bytes(upload.read())
+    video_path.write_bytes(upload.getvalue())   # sempre o conteúdo novo
+elif salvos:
+    escolha = st.sidebar.selectbox("…ou um vídeo já enviado",
+                                   ["—"] + salvos)
+    if escolha != "—":
+        video_path = VIDEO_DIR / escolha
+
+if video_path is not None:
 
     meta = probe(video_path)
     c1, c2, c3 = st.columns(3)
@@ -80,7 +89,7 @@ if res:
             [{"frame": r["frame"], "timestamp": round(r["timestamp"], 2),
               "n_atletas": len(r["athletes"]),
               "ids": [a["athlete_id"] for a in r["athletes"]]}
-             for r in recs]), use_container_width=True, height=300)
+             for r in recs]), width="stretch", height=300)
         with open(res["jsonl_path"], "rb") as f:
             st.download_button("Baixar JSONL", f,
                                file_name=res["jsonl_path"].name)

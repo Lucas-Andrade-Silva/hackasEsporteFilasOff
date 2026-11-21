@@ -27,8 +27,14 @@ def _fake_keypoints():
 
 
 class _FakeModel:
-    def predict(self, img, threshold=0.5):
-        return _fake_keypoints()
+    """Imita RFDETRInference.predict: lista de imagens -> lista de results."""
+
+    def __init__(self):
+        self.calls = []
+
+    def predict(self, imgs, threshold=0.5, include_source_image=True):
+        self.calls.append((len(imgs), include_source_image))
+        return [_fake_keypoints() for _ in imgs]
 
 
 def _estimador_stub():
@@ -36,6 +42,7 @@ def _estimador_stub():
     est.threshold = 0.5
     est.keypoint_min_conf = 0.5
     est.model = _FakeModel()
+    est.batch_size, est._fixed_batch, est.mode = 1, False, "eager"
     return est
 
 
@@ -66,10 +73,25 @@ def test_bbox_cai_na_extensao_dos_keypoints_sem_xyxy():
         data = {}
 
     class _M:
-        def predict(self, img, threshold=0.5):
-            return _SemBox()
+        def predict(self, imgs, threshold=0.5, include_source_image=True):
+            return _SemBox()   # resultado escalar também é aceito
 
     est = _estimador_stub()
     est.model = _M()
     d = est.predict(np.zeros((480, 640, 3), np.uint8))[0]
     np.testing.assert_allclose(d.bbox, [100, 50, 100, 50])
+
+
+def test_predict_batch_nao_copia_imagem_e_mantem_ordem():
+    est = _estimador_stub()
+    out = est.predict_batch([np.zeros((48, 64, 3), np.uint8)] * 3)
+    assert len(out) == 3 and all(len(d) == 2 for d in out)
+    assert est.model.calls == [(3, False)]
+
+
+def test_lote_fixo_completa_e_corta():
+    est = _estimador_stub()
+    est.batch_size, est._fixed_batch = 4, True
+    out = est.predict_batch([np.zeros((48, 64, 3), np.uint8)] * 2)
+    assert len(out) == 2
+    assert est.model.calls == [(4, False)]

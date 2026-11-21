@@ -12,7 +12,8 @@ BASE_DIR = Path(__file__).resolve().parent
 if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
 
-from config.settings import EXPORT_DIR, SPORTS  # noqa: E402
+from config.settings import (EXPORT_DIR, INFERENCE_BATCH,  # noqa: E402
+                             INFERENCE_MODE, SPORTS)
 
 
 def main():
@@ -23,6 +24,12 @@ def main():
     p.add_argument("--end", type=float, default=None, help="segundo final")
     p.add_argument("--out", default=str(EXPORT_DIR), help="diretório de saída")
     p.add_argument("--device", default=None, help="'cuda', 'cpu' ou auto")
+    p.add_argument("--mode", default=INFERENCE_MODE,
+                   choices=["eager", "compile", "none"],
+                   help="eager=fp16 sem compilar (padrão); compile=mais "
+                        "rápido, ~2 min de compilação; none=predict original")
+    p.add_argument("--batch", type=int, default=INFERENCE_BATCH,
+                   help="frames por chamada ao modelo")
     p.add_argument("--no-annotate", action="store_true",
                    help="só gera o JSONL, sem vídeo anotado")
     args = p.parse_args()
@@ -35,7 +42,9 @@ def main():
     print(f"{meta.width}x{meta.height} @ {meta.fps:.1f}fps, "
           f"{meta.frame_count} frames ({meta.duration:.1f}s)")
 
-    est = RFDETRPoseEstimator(device=args.device)
+    est = RFDETRPoseEstimator(device=args.device, mode=args.mode,
+                              batch_size=args.batch)
+    print(f"modelo: modo={est.mode} lote={est.batch_size}")
     last = [-1]
 
     def progress(frac):
