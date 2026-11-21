@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from config.keypoints import NUM_KEYPOINTS
 from core.athlete_detector import RFDETRPoseEstimator
@@ -53,8 +54,8 @@ def test_usa_bbox_e_conf_reais_do_detector():
     est = _estimador_stub()
     dets = est.predict(np.zeros((480, 640, 3), np.uint8))
     np.testing.assert_allclose(dets[0].bbox, [40, 40, 210, 210])
-    assert dets[0].bbox_conf == 0.97
-    assert dets[1].bbox_conf == 0.88
+    assert dets[0].bbox_conf == pytest.approx(0.97)
+    assert dets[1].bbox_conf == pytest.approx(0.88)
 
 
 def test_bbox_cai_na_extensao_dos_keypoints_sem_xyxy():
