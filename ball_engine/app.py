@@ -20,7 +20,7 @@ from core.video_processor import probe  # noqa: E402
 from core.pipeline import run_analysis  # noqa: E402
 
 st.set_page_config(page_title="MOVA — Ball Engine", layout="wide")
-st.title("Rastreamento de bola — TrackNetV3 + fallback")
+st.title("Rastreamento de bola — VballNet / TrackNetV3 + fallback")
 
 # ---------------- Tela 1: seleção e upload ----------------
 st.sidebar.header("Configuração")
@@ -71,7 +71,16 @@ start_frame = int(start_s * info.fps)
 end_frame = min(info.frame_count, int(end_s * info.fps))
 st.caption(f"Frames {start_frame}–{end_frame} ({end_frame - start_frame} frames)")
 
-use_tracknet = st.sidebar.checkbox("TrackNetV3", value=True)
+from core.hybrid_detector import BALL_MODELS, default_ball_model  # noqa: E402
+
+_MODEL_LABELS = {
+    "vballnet": "VballNet (treinado para vôlei)",
+    "tracknet": "TrackNetV3 (pesos de badminton)",
+    "none": "Nenhum (só fallbacks)",
+}
+ball_model = st.sidebar.selectbox(
+    "Modelo de bola", BALL_MODELS, index=BALL_MODELS.index(default_ball_model()),
+    format_func=_MODEL_LABELS.get)
 use_yolo = st.sidebar.checkbox("Fallback YOLO", value=True)
 use_color = st.sidebar.checkbox("Fallback cor+forma", value=True)
 
@@ -88,7 +97,7 @@ if st.button("Iniciar processamento", type="primary"):
 
     with st.spinner("Carregando modelos..."):
         detector = HybridBallDetector(
-            sport=sport, use_tracknet=use_tracknet,
+            sport=sport, ball_model=ball_model,
             use_yolo=use_yolo, use_color=use_color)
 
     try:
@@ -126,14 +135,14 @@ if "result" in st.session_state:
     st.subheader("Confiança por frame")
     fig = px.scatter(df, x="frame", y="confidence", color="source",
                      hover_data=["x", "y", "estimated"])
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
     st.subheader("Trajetória (coordenadas de pixel)")
     det_df = df[df["visibility"]]
     fig2 = px.scatter(det_df, x="x", y="y", color="estimated",
                       labels={"x": "x (px)", "y": "y (px)"})
     fig2.update_yaxes(autorange="reversed")
-    st.plotly_chart(fig2, use_container_width=True)
+    st.plotly_chart(fig2, width="stretch")
 
     st.subheader("Exportar")
     stem = Path(result.video_path).stem

@@ -9,3 +9,4 @@ ultralytics>=8.0
 imageio-ffmpeg>=0.4
 gdown>=4.7
 Pillow>=10.0
+onnxruntime>=1.17

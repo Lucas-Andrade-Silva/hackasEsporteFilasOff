@@ -2,18 +2,27 @@
 
 Implementa o mesmo fluxo do predict.py original:
 - entrada: janela de seq_len frames RGB 512x288 + fundo mediano (bg_mode do ckpt)
-- saída: heatmap sigmoide -> contornos -> maior blob -> centro
+- saída: heatmap sigmoide -> blobs (centroide ponderado) por frame
 - ensemble temporal com peso posicional (eval_mode='weight')
 - InpaintNet para preencher lacunas marcadas pela máscara de trajetória
 
+Diferenças em relação ao original:
+- Inferência em streaming: memória constante em relação ao tamanho do
+  trecho (só seq_len + batch frames reduzidos ficam vivos).
+- Retorna *todos* os blobs de cada frame (`Candidate`), não só o maior;
+  a escolha entre eles é feita por `core.trajectory_filter`.
+- InpaintNet é um passo separado (`inpaint`), chamado depois dos
+  fallbacks para aproveitar também as posições deles.
+
 Funções utilitárias portadas de test.py/utils do repositório original
-(predict_location, get_ensemble_weight, generate_inpaint_mask).
+(get_ensemble_weight, generate_inpaint_mask).
 """
 from __future__ import annotations
 
 import sys
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Optional
+from typing import TYPE_CHECKING, Callable, Iterable, Optional
 
 import cv2
 import math
@@ -22,9 +31,12 @@ import torch
 
 from config.settings import (
     TRACKNET_REPO_DIR, TRACKNET_CKPT, INPAINTNET_CKPT,
-    TRACKNET_HEIGHT, TRACKNET_WIDTH, MEDIAN_SAMPLE_MAX,
+    TRACKNET_HEIGHT, TRACKNET_WIDTH,
 )
-from core.schema import Detection, SOURCE_TRACKNET, SOURCE_INPAINT
+from core.schema import Detection, SOURCE_INPAINT
+
+if TYPE_CHECKING:
+    from core.background import Canvas
 
 # Importa model.py do repositório vendored
 if str(TRACKNET_REPO_DIR) not in sys.path:
@@ -35,18 +47,58 @@ H, W = TRACKNET_HEIGHT, TRACKNET_WIDTH
 COOR_TH = (1 / math.sqrt(H ** 2 + W ** 2)) * 50  # mesmo COOR_TH do repo
 
 
+# ---- blobs do heatmap -----------------------------------------------------
+
+@dataclass
+class Candidate:
+    """Blob do heatmap em coordenadas do frame original."""
+    x: float
+    y: float
+    peak: float   # valor máximo do heatmap no blob
+    mass: float   # soma do heatmap no blob (área x intensidade)
+
+
+def extract_blobs(heatmap: np.ndarray, sx: float, sy: float,
+                  threshold: float = 0.5, max_blobs: int = 5,
+                  ox: float = 0.0, oy: float = 0.0) -> list[Candidate]:
+    """Blobs do heatmap acima do limiar, ordenados por massa (desc).
+
+    O centro é o centroide ponderado pelo heatmap (subpixel na grade
+    512x288), convertido para coordenadas do frame original. O +0.5
+    alinha com a convenção do original (centro do retângulo do blob).
+    (ox, oy): posição do recorte no canvas, em pixels do canvas.
+    """
+    binary = (heatmap > threshold).astype(np.uint8)
+    if not binary.any():
+        return []
+    n, labels, stats, _ = cv2.connectedComponentsWithStats(binary, connectivity=8)
+    cands = []
+    for k in range(1, n):
+        x0, y0, w, h, _ = stats[k]
+        sub = heatmap[y0:y0 + h, x0:x0 + w] * (labels[y0:y0 + h, x0:x0 + w] == k)
+        mass = float(sub.sum())
+        if mass <= 0:
+            continue
+        yy, xx = np.mgrid[0:h, 0:w]
+        cx = x0 + float((sub * xx).sum()) / mass + 0.5
+        cy = y0 + float((sub * yy).sum()) / mass + 0.5
+        cands.append(Candidate(x=(ox + cx) * sx, y=(oy + cy) * sy,
+                               peak=float(sub.max()), mass=mass))
+    cands.sort(key=lambda c: c.mass, reverse=True)
+    return cands[:max_blobs]
+
+
+def merge_blobs(cands: list[Candidate], min_dist: float,
+                max_blobs: int = 5) -> list[Candidate]:
+    """Junta blobs de recortes sobrepostos (o mesmo objeto visto 2x)."""
+    kept: list[Candidate] = []
+    for c in sorted(cands, key=lambda c: c.mass, reverse=True):
+        if all(math.hypot(c.x - k.x, c.y - k.y) > min_dist for k in kept):
+            kept.append(c)
+    return kept[:max_blobs]
+
+
 # ---- utilitários portados de test.py -------------------------------------
-
-def predict_location(heatmap: np.ndarray) -> tuple[int, int, int, int]:
-    """(x, y, w, h) do maior blob do heatmap binário."""
-    if np.amax(heatmap) == 0:
-        return 0, 0, 0, 0
-    cnts, _ = cv2.findContours(heatmap.copy(), cv2.RETR_EXTERNAL,
-                               cv2.CHAIN_APPROX_SIMPLE)
-    rects = [cv2.boundingRect(c) for c in cnts]
-    i = max(range(len(rects)), key=lambda k: rects[k][2] * rects[k][3])
-    return rects[i]
-
 
 def get_ensemble_weight(seq_len: int) -> torch.Tensor:
     """Peso posicional triangular (eval_mode='weight' do repo original)."""
@@ -80,6 +132,31 @@ def generate_inpaint_mask(xs, ys, vis, th_h: float) -> np.ndarray:
     return mask
 
 
+def limit_inpaint_mask(mask: np.ndarray, vis, max_gap: int) -> np.ndarray:
+    """Mantém só lacunas internas (detecção dos dois lados) com até max_gap.
+
+    O original também marca a lacuna inicial inteira e lacunas de
+    qualquer tamanho; em vídeo real isso gera trajetórias inventadas de
+    segundos.
+    """
+    mask = np.asarray(mask, dtype=float).copy()
+    vis = np.asarray(vis)
+    n = len(mask)
+    i = 0
+    while i < n:
+        if not mask[i]:
+            i += 1
+            continue
+        j = i
+        while j < n and mask[j]:
+            j += 1
+        internal = i > 0 and j < n and vis[i - 1] and vis[j]
+        if not internal or (j - i) > max_gap:
+            mask[i:j] = 0
+        i = j
+    return mask
+
+
 # ---- detector -------------------------------------------------------------
 
 class TrackNetV3Detector:
@@ -87,8 +164,11 @@ class TrackNetV3Detector:
 
     Uso:
         det = TrackNetV3Detector()
-        detections = det.track(frames_bgr, frame_w, frame_h, on_progress=cb)
-    Retorna list[Detection] com uma entrada por frame de entrada.
+        canvas = Canvas(frame_w, frame_h)                  # core.background
+        bg = analyze_background(canvas_frames, fps)         # cortes + fundo
+        cands = det.candidates(frames_iter, canvas, bg.median_for)
+        # ... escolha de blob / filtro / fallback (hybrid_detector) ...
+        detections = det.inpaint(detections, frame_w, frame_h)
     """
 
     def __init__(
@@ -117,40 +197,25 @@ class TrackNetV3Detector:
         self.tracknet.load_state_dict(ckpt["model"])
         self.tracknet.to(self.device).eval()
 
-        self.inpaintnet = None
-        if use_inpaint and inpaintnet_ckpt and Path(inpaintnet_ckpt).exists():
-            ckpt_i = torch.load(str(inpaintnet_ckpt), map_location=self.device,
-                                weights_only=False)
-            self.inpaint_seq_len = ckpt_i["param_dict"]["seq_len"]
-            self.inpaintnet = InpaintNet()
-            self.inpaintnet.load_state_dict(ckpt_i["model"])
-            self.inpaintnet.to(self.device).eval()
+        self.inpainter = (InpaintNetModel(inpaintnet_ckpt, device=str(self.device))
+                          if use_inpaint else None)
+        if self.inpainter is not None and self.inpainter.net is None:
+            self.inpainter = None
 
     # -- preprocessamento ---------------------------------------------------
 
-    def _median_bg(self, frames_rgb: list[np.ndarray]) -> np.ndarray:
-        """Fundo mediano (H, W, 3) uint8 já no tamanho do modelo."""
-        n = len(frames_rgb)
-        step = max(1, n // MEDIAN_SAMPLE_MAX)
-        sample = np.stack(frames_rgb[::step])
-        med = np.median(sample, axis=0).astype("uint8")
-        return cv2.resize(med, (W, H))
-
-    def _build_input(self, frames_rgb: list[np.ndarray],
+    def _build_input(self, small_rgb: list[np.ndarray],
                      median_small: np.ndarray) -> np.ndarray:
-        """Monta tensor de entrada (C, H, W) float32 para uma janela."""
-        seq = np.stack([
-            np.moveaxis(cv2.resize(f, (W, H)), -1, 0)
-            for f in frames_rgb
-        ])  # (L, 3, H, W)
+        """Tensor de entrada (C, H, W) float32 para uma janela 512x288."""
+        seq = np.stack([np.moveaxis(f, -1, 0) for f in small_rgb])  # (L,3,H,W)
         median_ch = np.moveaxis(median_small, -1, 0)  # (3, H, W)
 
         if self.bg_mode == "subtract":
             diff = np.abs(seq.astype(np.int16) - median_ch[None].astype(np.int16))
-            x = diff.sum(axis=2).astype(np.uint8)  # (L, H, W)
+            x = diff.sum(axis=1).astype(np.uint8)  # soma nos canais -> (L, H, W)
         elif self.bg_mode == "subtract_concat":
             diff = np.abs(seq.astype(np.int16) - median_ch[None].astype(np.int16))
-            diff = diff.sum(axis=2, keepdims=True).astype(np.uint8)
+            diff = diff.sum(axis=1, keepdims=True).astype(np.uint8)
             x = np.concatenate([seq, diff], axis=1).reshape(-1, H, W)
         elif self.bg_mode == "concat":
             x = np.concatenate([median_ch[None], seq], axis=0).reshape(-1, H, W)
@@ -161,88 +226,147 @@ class TrackNetV3Detector:
     # -- inferência ----------------------------------------------------------
 
     @torch.no_grad()
-    def track(
+    def candidates(
         self,
-        frames_bgr: list[np.ndarray],
-        frame_w: int,
-        frame_h: int,
+        frames_bgr: Iterable[np.ndarray],
+        canvas: "Canvas",
+        median_for: Callable[[int], np.ndarray],
+        n_expected: Optional[int] = None,
         on_progress: Optional[Callable[[float], None]] = None,
         batch_size: int = 8,
-    ) -> list[Detection]:
-        """Rastreia a bola em toda a sequência. Um Detection por frame."""
-        n = len(frames_bgr)
+    ) -> list[list[Candidate]]:
+        """Blobs candidatos por frame, em streaming.
+
+        - `canvas`: grade de trabalho (core.background.Canvas). Cada
+          recorte 512x288 é uma sequência independente para o modelo; os
+          blobs de recortes sobrepostos são unidos no fim.
+        - `median_for(f)`: fundo (canvas RGB) da janela que começa em f.
+
+        Ensemble temporal: o frame f recebe as saídas das janelas que
+        começam em f-L+1..f. Assim que a janela que começa em f é
+        processada, o heatmap de f está completo: os blobs são extraídos
+        e o heatmap descartado. Só ~L + batch_size frames ficam vivos,
+        qualquer que seja o tamanho do trecho.
+        """
+        L = self.seq_len
+        T = len(canvas.tiles)
+        weight = get_ensemble_weight(L).numpy()
+        merge_dist = 6.0 * max(canvas.sx, canvas.sy)
+
+        imgs: dict[int, np.ndarray] = {}            # frame -> canvas RGB
+        acc: dict[tuple, np.ndarray] = {}           # (frame, tile) -> heatmap
+        wsum: dict[int, float] = {}
+        out: list[list[Candidate]] = []
+        pending: list[int] = []                     # inícios de janela
+
+        def run_batch(n_total: Optional[int]):
+            if not pending:
+                return
+            items, xs = [], []
+            for s in pending:
+                last = s + L - 1 if n_total is None else min(s + L - 1, n_total - 1)
+                med = median_for(s)
+                for k in range(T):
+                    clip = [canvas.tile(imgs[min(s + j, last)], k) for j in range(L)]
+                    xs.append(self._build_input(clip, canvas.tile(med, k)))
+                    items.append((s, k))
+            ys = []
+            for b in range(0, len(xs), batch_size):
+                x = torch.from_numpy(np.stack(xs[b:b + batch_size])).to(self.device)
+                ys.append(self.tracknet(x).cpu().numpy())  # (B, L, H, W)
+            y = np.concatenate(ys)
+            for (s, k), yk in zip(items, y):
+                valid = L if n_total is None else min(L, n_total - s)
+                for j in range(valid):
+                    key = (s + j, k)
+                    if key in acc:
+                        acc[key] += yk[j] * weight[j]
+                    else:
+                        acc[key] = yk[j] * weight[j]
+                    if k == 0:
+                        wsum[s + j] = wsum.get(s + j, 0.0) + float(weight[j])
+            s_max = pending[-1]
+            pending.clear()
+            # Todo frame <= s_max já recebeu todas as suas janelas.
+            while len(out) <= s_max:
+                f = len(out)
+                ws = max(wsum.pop(f), 1e-9)
+                blobs = []
+                for k, (ox, oy) in enumerate(canvas.tiles):
+                    blobs += extract_blobs(acc.pop((f, k)) / ws, canvas.sx,
+                                           canvas.sy, ox=ox, oy=oy)
+                out.append(merge_blobs(blobs, merge_dist) if T > 1 else blobs)
+            for f in [f for f in imgs if f <= s_max]:
+                del imgs[f]
+            if on_progress and n_expected:
+                on_progress(min(1.0, len(out) / n_expected))
+
+        n = 0
+        for f, frame in enumerate(frames_bgr):
+            imgs[f] = canvas.make(frame)
+            n = f + 1
+            if f - L + 1 >= 0:
+                pending.append(f - L + 1)
+                if len(pending) >= batch_size:
+                    run_batch(None)
         if n == 0:
             return []
-        frames_rgb = [cv2.cvtColor(f, cv2.COLOR_BGR2RGB) for f in frames_bgr]
-        median_small = self._median_bg(frames_rgb)
+        # Janelas finais (parciais): repetem o último frame, como o original.
+        for s in range(max(0, n - L + 1), n):
+            pending.append(s)
+            if len(pending) >= batch_size:
+                run_batch(n)
+        run_batch(n)
+        if on_progress:
+            on_progress(1.0)
+        return out
 
-        # Ensemble temporal: cada frame acumula a saída de todas as janelas
-        # que o contêm, ponderada pela posição dentro da janela.
-        L = self.seq_len
-        weight = get_ensemble_weight(L).numpy()
-        acc = np.zeros((n, H, W), dtype=np.float32)
-        wsum = np.zeros(n, dtype=np.float32)
+    def inpaint(self, detections, frame_w, frame_h, **kw):
+        """Atalho para InpaintNetModel.inpaint (mantido por compatibilidade)."""
+        if self.inpainter is None:
+            return detections
+        return self.inpainter.inpaint(detections, frame_w, frame_h, **kw)
 
-        windows = []
-        for i in range(n):
-            valid = min(L, n - i)
-            clip = frames_rgb[i:i + valid]
-            if valid < L:  # repete último frame só p/ completar a janela
-                clip = clip + [frames_rgb[n - 1]] * (L - valid)
-            windows.append((i, valid, self._build_input(clip, median_small)))
 
-        for b in range(0, n, batch_size):
-            batch = windows[b:b + batch_size]
-            x = torch.from_numpy(np.stack([t[2] for t in batch])).to(self.device)
-            y = self.tracknet(x).cpu().numpy()  # (B, L, H, W)
-            for k, (i, valid, _) in enumerate(batch):
-                for f in range(valid):
-                    acc[i + f] += y[k, f] * weight[f]
-                    wsum[i + f] += weight[f]
-            if on_progress:
-                on_progress(0.7 * min(1.0, (b + batch_size) / n))
+class InpaintNetModel:
+    """InpaintNet do TrackNetV3, usável com qualquer detector de bola.
 
-        wsum[wsum == 0] = 1.0
-        heatmaps = acc / wsum[:, None, None]
+    Recebe só coordenadas (não imagens), então serve tanto para TrackNet
+    quanto para VballNet.
+    """
 
-        # Heatmap -> (x, y, conf) em coordenadas do frame original
-        sx, sy = frame_w / W, frame_h / H
-        xs, ys, confs, vis = [], [], [], []
-        for f in range(n):
-            hm = heatmaps[f]
-            peak = float(hm.max())
-            bx, by, bw, bh = predict_location((hm > 0.5).astype(np.uint8))
-            if bw > 0:
-                xs.append((bx + bw / 2) * sx)
-                ys.append((by + bh / 2) * sy)
-                confs.append(peak)
-                vis.append(1)
-            else:
-                xs.append(0.0)
-                ys.append(0.0)
-                confs.append(peak)
-                vis.append(0)
-            if on_progress:
-                on_progress(0.7 + 0.1 * f / n)
-
-        detections = [
-            Detection(x=x if v else None, y=y if v else None,
-                      confidence=c, visibility=bool(v), source=SOURCE_TRACKNET)
-            for x, y, c, v in zip(xs, ys, confs, vis)
-        ]
-
-        if self.inpaintnet is not None:
-            detections = self._inpaint(detections, xs, ys, vis,
-                                       frame_w, frame_h, on_progress)
-        return detections
+    def __init__(self, ckpt: str | Path | None = INPAINTNET_CKPT,
+                 device: Optional[str] = None):
+        if device is None:
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.device = torch.device(device)
+        self.net = None
+        if ckpt and Path(ckpt).exists():
+            ck = torch.load(str(ckpt), map_location=self.device, weights_only=False)
+            self.seq_len = ck["param_dict"]["seq_len"]
+            self.net = InpaintNet()
+            self.net.load_state_dict(ck["model"])
+            self.net.to(self.device).eval()
 
     @torch.no_grad()
-    def _inpaint(self, detections, xs, ys, vis, frame_w, frame_h,
-                 on_progress=None) -> list[Detection]:
-        """Preenche lacunas internas da trajetória com InpaintNet."""
+    def inpaint(self, detections: list[Detection], frame_w: int, frame_h: int,
+                on_progress: Optional[Callable[[float], None]] = None,
+                batch_size: int = 256, max_gap: int = 15) -> list[Detection]:
+        """Preenche lacunas internas da trajetória com InpaintNet.
+
+        Entrada: todas as posições *detectadas* (TrackNet e fallbacks).
+        Só altera lacunas internas de até `max_gap` frames.
+        """
+        if self.net is None:
+            return detections
+        detections = list(detections)
         n = len(detections)
-        L = self.inpaint_seq_len
+        L = self.seq_len
+        vis = [1 if d.detected else 0 for d in detections]
+        xs = [d.x if d.detected else 0.0 for d in detections]
+        ys = [d.y if d.detected else 0.0 for d in detections]
         mask = generate_inpaint_mask(xs, ys, vis, th_h=frame_h * 0.05)
+        mask = limit_inpaint_mask(mask, vis, max_gap)
         if mask.sum() == 0 or n < L:
             return detections
 
@@ -254,22 +378,21 @@ class TrackNetV3Detector:
         acc = np.zeros((n, 2), dtype=np.float32)
         wsum = np.zeros(n, dtype=np.float32)
 
-        for i in range(n):
-            valid = min(L, n - i)
-            c = coor[i:i + valid]
-            mm = m[i:i + valid]
-            if valid < L:  # repete última posição
-                c = np.concatenate([c, np.repeat(c[-1:], L - valid, axis=0)])
-                mm = np.concatenate([mm, np.repeat(mm[-1:], L - valid, axis=0)])
-            xc = torch.from_numpy(c[None]).to(self.device)
-            xm = torch.from_numpy(mm[None]).to(self.device)
-            out = self.inpaintnet(xc, xm).cpu().numpy()[0]  # (L, 2)
-            out = out * mm[:, 0][:, None] + c * (1 - mm[:, 0][:, None])
-            for f in range(valid):
-                acc[i + f] += out[f] * weight[f]
-                wsum[i + f] += weight[f]
+        # Janela i cobre [i, i+L); no fim repete a última posição.
+        idx = np.minimum(np.arange(n)[:, None] + np.arange(L)[None], n - 1)
+        for b in range(0, n, batch_size):
+            ii = idx[b:b + batch_size]
+            c, mm = coor[ii], m[ii]                       # (B,L,2), (B,L,1)
+            o = self.net(torch.from_numpy(c).to(self.device),
+                                torch.from_numpy(mm).to(self.device)).cpu().numpy()
+            o = o * mm + c * (1 - mm)
+            for k in range(len(ii)):
+                i = b + k
+                v = min(L, n - i)
+                acc[i:i + v] += o[k, :v] * weight[:v, None]
+                wsum[i:i + v] += weight[:v]
             if on_progress:
-                on_progress(0.8 + 0.2 * i / n)
+                on_progress(min(1.0, (b + batch_size) / n))
 
         wsum[wsum == 0] = 1.0
         repaired = acc / wsum[:, None]

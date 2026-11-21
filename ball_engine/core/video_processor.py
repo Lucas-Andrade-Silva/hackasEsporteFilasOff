@@ -46,23 +46,32 @@ def iter_frames(
     video_path: str | Path,
     start_frame: int = 0,
     end_frame: Optional[int] = None,
+    step: int = 1,
 ) -> Iterator[tuple[int, np.ndarray]]:
-    """Itera (frame_index, imagem BGR) dentro do intervalo [start, end)."""
+    """Itera (frame_index, imagem BGR) dentro do intervalo [start, end).
+
+    Com step > 1, os frames pulados só são "grabbed" (sem conversão de
+    cor), o que deixa a amostragem bem mais barata.
+    """
     cap = cv2.VideoCapture(str(video_path))
     if not cap.isOpened():
         raise ValueError(f"Não foi possível abrir o vídeo: {video_path}")
     if start_frame > 0:
         cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
     idx = start_frame
-    while True:
-        if end_frame is not None and idx >= end_frame:
-            break
-        ok, frame = cap.read()
-        if not ok:
-            break
-        yield idx, frame
-        idx += 1
-    cap.release()
+    try:
+        while end_frame is None or idx < end_frame:
+            if (idx - start_frame) % step:
+                if not cap.grab():
+                    break
+            else:
+                ok, frame = cap.read()
+                if not ok:
+                    break
+                yield idx, frame
+            idx += 1
+    finally:
+        cap.release()
 
 
 def read_segment(
