@@ -2,11 +2,11 @@
 
 > O jogo que acontece fora da tela. Todo movimento conta.
 >
-> Versão 1.0 — 24/11/2026 — Proposta operacional para execução pela equipe.
+> Versão 2.0 — 24/11/2026 — Plano integral de execução, com especificação operacional e rastreabilidade.
 
 ## 0. Referências e premissas
 
-Este documento consolida o plano operacional, sem substituir a documentação original. Os requisitos do regulamento prevalecem; as tarefas são propostas, não evidências de implementação.
+Este documento consolida o plano operacional, sem substituir a documentação original. A Parte I (seções 0–13) preserva a síntese e o backlog original. A Parte II (seções 14–21) contém especificações completas, detalhamento das tarefas e matriz de rastreabilidade da análise original. Os requisitos do regulamento prevalecem; as tarefas são propostas, não evidências de implementação.
 
 - [Projeto completo v4.1](MOVA_Brasil_Projeto_Completo_Hack_Brasil_2026.md)
 - [Design e interface v1.0](MOVA_Brasil_Design_e_Interface.md)
@@ -434,3 +434,654 @@ Confirmar responsáveis nominais, horas reais, código local não enviado, acess
 Ações imediatas: 1) responsáveis e capacidade; 2) consulta organização; 3) auditoria de origem; 4) transformar backlog em issues/milestones; 5) contratos CV02/BE01; 6) scaffold FE01; 7) ambientes BE02/BE13; 8) MediaPipe e fixtures; 9) integração vertical; 10) evidências G1.
 
 **Regra de execução:** jornada demonstrável desde o primeiro dia, frentes paralelas com integração frequente, expansão somente após estabilidade do núcleo. Tecnologia real, útil, verificável e comunicada com clareza.
+
+
+---
+
+# PARTE II — Especificação operacional integral
+
+A parte I mantém as decisões e os IDs originais. Esta parte detalha a execução, os contratos, as interfaces, os testes, a entrega e os mecanismos de gestão. Os novos detalhes são propostas de implementação, não funcionalidades já entregues. Em caso de conflito, os gates de elegibilidade e segurança prevalecem. Os critérios de aceite abaixo complementam os da parte I.
+
+## 14. Produto final: experiências, telas e design system
+
+### 14.1. Os cinco pilares e suas fronteiras
+
+| Pilar | Benefício | Evidência de entrega | Dependências |
+|---|---|---|---|
+| MOVA Engine | Medição acessível e transparente | Pose, evento, resultado calculado e controle de qualidade | CV02–13 |
+| Missões | Incentivo para praticar esporte | Escolha de desafio, protocolo, guia e repetição voluntária | FE03–09 |
+| Copa MOVA | Motivação social | Ranking isolado, atualizado por tentativas elegíveis | BE06–11, FE11 |
+| Ghost Mode / Passaporte | Evolução pessoal | Histórico e comparação de duas tentativas comparáveis | BE10, FE10, CV14, FE14 |
+| MOVA Lab | Credibilidade | Método, versão, evidência, métricas e limitações | CV11, CV13, FE13, PD08 |
+
+Não depender de clubes ou treinadores para gerar valor. Produto inicial gratuito para atleta; hipótese B2B de gestão de turmas, relatórios e selo futuro, sem alegação de receita. O primeiro valor precisa aparecer antes de cadastro obrigatório. O MVP não precisa de feed, chat, scouting, monetização efetiva ou app nativo.
+
+### 14.2. Mapa de navegação e especificação de telas
+
+| Rota proposta | Conteúdo principal | Interações | Estados e aceite |
+|---|---|---|---|
+| / | Marca, frase de valor, missão da semana, esporte, começar, experimentar demo | Começar, escolher esporte, acessar histórico | Primeiro acesso sem bloqueio; CTA acima da dobra; retorno ao fluxo |
+| /missions | Cards Bloqueio e Rebote; finalidade, protocolo, duração aproximada, tentativa limitada | Escolher missão e ler instruções | Missão indisponível explicitada; nunca confundir protocolo |
+| /capture/[mission] | Guia, câmera, silhueta, esqueleto, semáforo textual, timer | Permitir câmera, preparar, iniciar, cancelar, repetir | Sem câmera → demo; pés cortados → dica; parar tracks ao sair; um único salto por tentativa |
+| /results/[attempt] | Número grande, unidade, qualidade, incerteza sustentada, fases, dicas | Tentar novamente, ranking, passaporte, comparar | Experimental não pontua; rejeitada não mostra marca como recorde; resultado consistente após refresh |
+| /leaderboard | Grupo, protocolo, período, desempenho; evolução e grupo se disponíveis | Trocar aba/filtro, ver posição | Posição atual identificada, empate determinístico, sem dados alheios ou ranking nacional fictício |
+| /passport | Histórico, recordes, evolução, selo e versão | Abrir tentativa, comparar, excluir dados próprios | Estado vazio acolhedor; primeira tentativa é registro, não baseline validada |
+| /ghost | Replay de dois esqueletos, fases, pico, delta | Play/pause, scrub, alternar sobreposição/lado a lado | Protocolos incompatíveis bloqueiam inferência de evolução; sem histórico orienta nova tentativa |
+| /lab | Protocolo, método, versões, benchmarks, limitações e experimentos | Abrir metodologia, ver gráficos, inspecionar caso rejeitado | Pendente aparece como pendente; não inventar métricas; reproduzibilidade por commit |
+| /demo | Escolha de esporte e cenário sintético, explicação, processamento, resultado | Selecionar fixture, repetir, resetar, consultar Lab | Nenhum cadastro ou permissão de câmera; etiqueta sintético permanente; sessão isolada |
+| /privacy | Dados coletados, finalidade, retenção e exclusão, contato | Excluir dados, limpar sessão, retornar | Linguagem clara; exclusão funciona; sem retenção silenciosa |
+| /settings (se viável) | Tema, som, acessibilidade | Alternar preferências | Não é pré-requisito do fluxo principal |
+
+Rotas são propostas; ajustes de implementação permitidos se os fluxos permanecem completos e testáveis.
+
+### 14.3. Especificação visual
+
+| Token | Tema escuro | Tema claro (P1) |
+|---|---|---|
+| Fundo | #0E1A2B | #FFFFFF |
+| Superfície | #16263D | #F5F7FA |
+| Texto principal | #F5F7FA | #0E1A2B |
+| Texto secundário | #9AA8BC | #5B6B80 |
+| Ação | #C6F432 com texto #0E1A2B | #3F6212 ou fundo lima com texto escuro |
+| Vôlei | #4D8DFF | #1D4ED8 |
+| Basquete | #FF7A1A | #C2410C |
+| Erro | #FF5A5F | Vermelho escuro acessível, a validar |
+
+Tipografia: Barlow Condensed para títulos e resultados (48–64 px para a marca principal), Inter para textos; números tabulares onde útil. Usar fontes com licença, preferir cache local. Componentes: AppShell, BottomNav, MissionCard, PrimaryButton, CameraGuide, QualityIndicator, Countdown, PoseCanvas, MeasurementCard, AttemptStatus, RankingRow, HistoryCard, GhostPlayer, LabMetric, EmptyState, ErrorState, SyntheticBadge. Validar contraste AA nas combinações realmente usadas, incluindo superfícies e texto pequeno.
+
+Captura: tela cheia; esqueleto lima; semáforo grande com texto/ícone; instruções a distância e timer visual/sonoro com alternativa silenciosa. Não depender exclusivamente de áudio ou cor. Resultado: valor grande, incerteza ao lado, selo, ações claras; animação curta opcional. Ranking: manter posição do usuário visível quando viável. Recorde: celebrar apenas ganho que supera margem sustentada. Ghost: tentativa atual lima, anterior laranja ou azul; legenda, controle de reprodução e fases. Preferir animação leve e respeitar reduced motion.
+
+Usabilidade: alvo de primeira missão em menos de dois minutos; testar com uma mão, celular a 2–3 m quando enquadramento permite, outdoor, rede limitada, portrait/landscape, teclado e leitor de tela nas áreas não relacionadas à câmera. Alvos de toque 48×48 px; foco visível, textos alternativos e conteúdo sem humilhação ou pressão de sequência.
+
+### 14.4. Wireframes funcionais (esquemáticos; não são produto implementado)
+
+```text
+INÍCIO                          CAPTURA
+MOVA BRASIL                     [Vôlei · Bloqueio] [Sair]
+Salta. Evolui. Aparece.          [Verde + ícone] Pode saltar
+[Missão: Bloqueio]               ┌────────────────────────┐
+[Começar missão]                 │ silhueta / pose / pés   │
+[Experimentar demo]             │          3             │
+[Início Ranking Evolução Lab]    └────────────────────────┘
+                                [Cancelar] [Instruções]
+
+RESULTADO                       GHOST
+[Conferido / Experimental]       [Anterior] [Atual]
+42 cm  ± 3 cm (ilustrativo)      [dois esqueletos / fases]
+[Como medimos]                  [play/pause] [timeline]
+[Tentar novamente]              36 → 42 cm (ilustrativo)
+[Ver ranking] [Comparar]        [Método e comparabilidade]
+
+LAB                             COPA MOVA
+Método · versão · dispositivo   [Grupo] [Protocolo]
+Erro / amostra / rejeições       Desempenho | Evolução | Grupo
+[Gráfico se houver evidência]   [lista de marcas aceitas]
+[Reproduzir caso sintético]     [sua posição, quando houver]
+Limitações e fontes             [sem marcas → nova missão]
+```
+
+Valores são exclusivamente ilustrativos. A interface final deve renderizar resultados do motor e jamais os números do wireframe como resultados reais.
+
+## 15. Engenharia: implementação por componente, dependências e decisões
+
+### 15.1. Pipeline e ordem interna
+
+```mermaid
+flowchart LR
+ A[Captura ou fixture de vídeo] --> B[Decodificação e timestamps]
+ B --> C[Inferência pose]
+ C --> D[Mapeamento e confiança]
+ D --> E[Qualidade de cena e filtro]
+ E --> F[Máquina de estados]
+ F --> G[Estimador tempo de voo]
+ F --> H[Ajuste de trajetória]
+ G --> I[Consistência e incerteza]
+ H --> I
+ I --> J{Classificação}
+ J -->|accepted| K[Histórico e ranking]
+ J -->|experimental| L[Resultado sem pontuar]
+ J -->|rejected| M[Motivo e nova tentativa]
+ I --> N[Replay e Lab]
+```
+
+1. Carregamento: resolver assets de modelo versionados, fallback explícito se indisponíveis; diferenciar tempo de download, inferência e cálculo. Captura local com limite de duração/tamanho, cancelamento e liberação de recursos.
+2. Decodificação: usar timestamps de apresentação/captura efetivos; não tratar FPS solicitado ou nominal como observado. Verificar monotonicidade, duplicatas, frames faltantes e orientação.
+3. Pose: MediaPipe no caminho móvel; adaptar COCO-17 do RF-DETR para um subconjunto comum somente se necessário. Não converter confiança e visibilidade como se fossem métricas equivalentes sem documentação. Marcar keypoints faltantes/estimados.
+4. Filtro: preservar a trajetória original para análise, estimar ruído e suavizar apenas com parâmetros versionados. Não extrapolar oclusões longas ou inventar contato de pé.
+5. Evento: detectar uma sequência válida de preparação, takeoff, apex e landing com janela de estabilização, baseado em pés/tornozelos, quadril e contexto temporal. Testar ausência de salto, dois saltos, passos, flexão sem voo e oclusão.
+6. Métrica: implementar tempo de voo primeiro; comparar ajuste parabólico com escala válida, sinal de curvatura correto, resíduos e consistência. Não usar quadril como centro de massa exato. Considerar assimetria de postura no pouso.
+7. Qualidade e incerteza: devolver flags, evidência e explicação. Antes de calibrar, não exibir ±3 cm como fato. Caso sem incerteza defensável, pode aparecer como experimental; critérios de aceitação para ranking precisam de protocolo documentado.
+8. Persistência: server-side recálculo do mesmo protocolo a partir de evidência mínima; distinguir execução sintética, real autorizada e replay de landmarks. Só status aceito e escopo correto alimentam ranking.
+9. Replay: armazenar localmente ou mediante autorização o subconjunto necessário de landmarks, alinhamento por tempo, unidade e fase; não comparar protocolos diferentes.
+
+### 15.2. Sensibilidade temporal e exemplo analítico
+
+Para tempo de voo de 0,5 s, a fórmula h = 9,81 t² / 8 produz 30,65625 cm. Acrescentar um frame ao tempo estimado tem os efeitos aproximados abaixo, considerando exclusivamente erro temporal.
+
+| FPS efetivo | Duração de um frame | Variação de altura para +1 frame |
+|---:|---:|---:|
+| 30 | 33,33 ms | +4,22 cm |
+| 60 | 16,67 ms | +2,08 cm |
+| 120 | 8,33 ms | +1,03 cm |
+
+Isto é cálculo teórico, não medição do MOVA. O erro pode ser maior se ambos os eventos forem deslocados, se houver erros de pose ou se as hipóteses biomecânicas falharem. Incluir esses casos nos testes unitários.
+
+### 15.3. Estratégia de reaproveitamento dos motores já existentes
+
+| Subsistema | Reaproveitar | Não transportar automaticamente | Verificação |
+|---|---|---|---|
+| RF-DETR pose | contrato JSONL, conceito PoseEstimator/Tracker, filtragem, overlay, testes e benchmarks de laboratório | dependência GPU, pesos Preview, tracking multipessoa obrigatório, estimativas congeladas como observação | executar pytest e CLI conforme README, conferir licenças e origem, comparar em clipe autorizado |
+| TrackNet/VballNet | pipeline de bola, flags source/estimated, filtragem de lacunas, dados de replay, testes | vídeo real público, inferência obrigatória na PWA, checkpoints não auditados, promessa de detectar cesta/saque | pytest, inventário e referência; validar em dataset apropriado antes de promover |
+| MediaPipe | modelo de pose móvel e adaptação para protocolo individual | precisão herdada da literatura sem reprodução própria | smoke em navegador e Android, clipe sintético e teste privado autorizado |
+
+Fixar commits de origem no inventário e comparar as versões de ball_engine presentes em ambas as branches antes de integração seletiva. Manter pesquisa separada do caminho crítico. A detecção de bola é P2 somente como replay experimental; transformar trajetória em métrica esportiva exige protocolo e validação adicionais.
+
+### 15.4. Stack completa e alternativas
+
+| Camada | Escolha proposta | Alternativa se bloquear |
+|---|---|---|
+| UI | Next.js, TypeScript, Tailwind, shadcn/ui quando útil | Componentes próprios acessíveis |
+| Movimento visual | CSS, Motion só onde necessário | Transições simples ou sem animação |
+| Pose | MediaPipe Lite/Full, Web Worker | Inferência em clipe curto; avaliar outro modelo se benchmark justificar |
+| Replay | Canvas 2D | Duas visualizações lado a lado |
+| Gráficos | Recharts quando houver dados | SVG/tabela acessível |
+| Domínio | TypeScript puro | Sem serviço remoto obrigatório |
+| Experimentos | Python, RF-DETR, ByteTrack, VballNet/TrackNetV3 | Offline com exports rastreáveis |
+| Persistência | Supabase/PostgreSQL, Auth, RLS | Demo local isolada e explicitamente limitada |
+| Deploy | Vercel/HTTPS | Alternativa equivalente aprovada e testada |
+| Testes | Vitest, Playwright, Pytest, Actions | Smoke manual documentado se ferramenta indisponível, não substituir gates críticos |
+
+Documentar decisões em ADRs curtos: contexto, opções, critério, escolha, consequência e gatilho para rever. Não assumir que quotas ou licenças de planos gratuitos permitem todos os usos sem verificação.
+
+## 16. Contratos de integração, persistência e segurança
+
+### 16.1. Envelope e endpoints propostos
+
+Contrato tipado e esquema de validação compartilhado; nomes abaixo são de projeto, não APIs já existentes.
+
+```ts
+type AttemptSource = 'synthetic_video' | 'synthetic_pose_replay' | 'authorized_capture';
+type AttemptEvidence = {
+  schemaVersion: string;
+  sessionId: string;
+  challengeId: string;
+  protocolId: string;
+  protocolVersion: string;
+  algorithmVersion: string;
+  source: AttemptSource;
+  fixtureId?: string;
+  idempotencyKey: string;
+  frames: PoseFrame[];
+};
+type AttemptResponse = {
+  attemptId: string;
+  measurement: Measurement;
+  rankingEligible: boolean;
+  verificationLevel: 'recorded' | 'engine_checked';
+};
+```
+
+| Operação | Dados de entrada | Resultado esperado | Teste |
+|---|---|---|---|
+| POST /api/sessions | modo e missão | sessão autorizada/isolada | sem acesso cruzado |
+| POST /api/attempts | envelope, nunca score arbitrário | cálculo, status, ID idempotente | payload repetido não duplica |
+| GET /api/attempts/:id | ID + sessão | tentativa autorizada | outro visitante recebe negação |
+| GET /api/history | escopo autenticado/demo | histórico próprio ordenado | reset/demo não vaza |
+| GET /api/leaderboard | grupo, protocolo, período | ranking derivado | inválidas excluídas |
+| POST /api/demo/reset | sessão de demo | limpar apenas sessão própria | outra sessão permanece |
+| DELETE /api/profile/data | autorização de dono | exclusão conforme política | sem acesso a terceiro |
+
+Erro estruturado com código estável, texto de ação e request ID sem dados pessoais. Exemplos: INVALID_PROTOCOL, INVALID_TIMESTAMP, INVALID_CAPTURE, MODEL_UNAVAILABLE, SESSION_EXPIRED, RATE_LIMITED, FORBIDDEN, CONFLICT, NETWORK_ERROR. Rejeição de qualidade calculada é resultado de tentativa, não necessariamente erro HTTP; transporte inválido é erro de requisição. Nunca devolver stack trace, segredo ou frames privados em logs.
+
+### 16.2. Matriz de acesso e invariantes
+
+| Ator | Pode ler | Pode escrever |
+|---|---|---|
+| Demo sem cadastro | seeds fictícios e sua sessão | tentativa/replay no próprio namespace; reset próprio |
+| Atleta adulto autenticado | perfil próprio, histórico próprio e ranking autorizado de grupo | preferências e evidência de tentativa via API |
+| Outro membro do grupo | somente dados mínimos de ranking autorizados | próprias tentativas |
+| Visitante externo | dados sintéticos públicos | sem escrita em dados reais |
+| Servidor | apenas operações necessárias | recálculo, persistência, eventos e manutenção autorizados |
+
+Tentativas não podem ser reatribuídas a outro dono. Protocolo versionado é imutável após uso; nova versão gera nova categoria de comparabilidade. Garantir chave única de idempotência no escopo e transação para resultado/registro. Definir retenção de traces e demo antes do deploy; perfil privado por padrão, exclusão verificável. Sem segredo em NEXT_PUBLIC, sem service role no browser; RLS também em tabelas de sessão e políticas para leitura e atualização. Não confiar em metadata editável para autorização. Testar views e funções com usuários distintos.
+
+A separação sintético/real deve estar presente no armazenamento, API, interface e analytics. Nenhum resultado sintético deve alterar ranking real. Captura de câmera privada só sob condições autorizadas; demo pública não solicita permissão de câmera.
+
+### 16.3. Regras de ranking detalhadas
+
+| Ranking | Entrada | Saída | Casos de borda |
+|---|---|---|---|
+| Desempenho | tentativas aceitas, mesmo protocolo/categoria/período | melhor marca por atleta/grupo | empate com critério estável; sem ranking de tentativa rejeitada |
+| Evolução | baseline de várias marcas válidas, nova marca comparável | ganho absoluto e relativo, se sustentado | sem baseline → mostrar histórico; ganho dentro da incerteza → sem recorde |
+| Participação | membros elegíveis e dias/período definidos | percentual de ativos | grupos pequenos, alteração de membros e denominador zero |
+
+Exemplos ilustrativos: 30→36 cm representa +6 cm e +20%, somente contado se superar a incerteza aplicável. Grupo com 8/10 ativos (80%) fica à frente de 15/20 (75%) se as regras comparáveis forem satisfeitas. Não aplicar ranking absoluto global, filtro por sexo/idade ou nota de talento sem justificativa de privacidade, inclusão e protocolo. Categorias devem ser mínimas e explicitadas; equidade é objetivo de pesquisa, não garantia.
+
+## 17. Especificação integral de backlog e execução por frente
+
+As tabelas da seção 6 são a lista canônica de tarefas (63). Esta seção explicita o produto de cada tarefa e o teste de conclusão; dependências e horas continuam na tabela canônica.
+
+### 17.1. IA — 16 tarefas
+
+| ID | Produto concreto | Evidência mínima de aceite |
+|---|---|---|
+| CV01 | inventário dos dois motores, dependências, commits, licenças, benchmarks existentes | relatório e comandos de reprodução; limitações registradas |
+| CV02 | schema pose e measurement, adaptadores e versão | exemplos serializados validados em FE/BE |
+| CV03 | adaptador MediaPipe com carregamento/erro, modo vídeo | inferência de pontos de verdade em clipe, teste browser/Android |
+| CV04 | manifesto de fixtures com licença, casos positivos/negativos e ground truth | arquivos reproduzíveis, nenhum dado pessoal, origem declarada |
+| CV05 | coleta de timestamp, tamanho, orientação e FPS efetivo | testes de gaps, tempo variável e conversão |
+| CV06 | filtro parametrizado, saída raw e filtrada quando necessário | testes de ruído, oclusão e ausência |
+| CV07 | detector de fases com eventos e flags | eventos sobre série conhecida, sem salto e salto duplo |
+| CV08 | fórmula tempo de voo com unidade e hipóteses | casos analíticos e resolução temporal |
+| CV09 | estimador complementar e diagnóstico | teste de trajetória sintética e caso não identificável |
+| CV10 | regras de quality gate e classificação | matriz de inválidos reproduzível, motivos legíveis |
+| CV11 | modelo de incerteza e estado não calibrado | documentação e testes sem intervalo fabricado |
+| CV12 | entrada/saída compartilhada entre browser e servidor | mesma evidência produz mesma decisão e resultado |
+| CV13 | runner, dados autorizados e relatório de benchmark | métricas, versões, amostra, cobertura e limites |
+| CV14 | trace de replay e sincronização por evento | duas tentativas comparáveis e rejeição de incompatível |
+| CV15 | comparação RF-DETR/MediaPipe offline | mesma referência, métricas comparáveis e custo de execução |
+| CV16 | replay de bola no Lab, opcional | origem, confiança e estimados sinalizados; sem claim de prova esportiva |
+
+### 17.2. Frontend — 17 tarefas
+
+| ID | Produto concreto | Evidência mínima de aceite |
+|---|---|---|
+| FE01 | aplicação, manifest, layout, build | abre em HTTPS e navega em mobile |
+| FE02 | tokens, fontes, componentes e estados | contrastes e controles documentados |
+| FE03 | home, CTA, navegação inferior | usuário inicia fluxo sem cadastro obrigatório |
+| FE04 | cards Bloqueio/Rebote | contrato de missão correto até resultado |
+| FE05 | guia de segurança/câmera | instruções e opção de cancelar/demo |
+| FE06 | aquisição de câmera, timer, cancelamento | permissão negada e tracks liberadas |
+| FE07 | overlay Canvas, coordenadas, resize/espelhamento | pontos corretamente alinhados em tela |
+| FE08 | processamento e feedback | loading, timeout, erro, retry, cancelamento |
+| FE09 | tela de resultado e ações | três estados, unidade, método e limites |
+| FE10 | passaporte | refresh, vazio e acesso autorizado |
+| FE11 | Copa MOVA | ranking e atualização real, empate e vazio |
+| FE12 | demo sem conta/câmera | D01–D06 testados conforme escopo, selo sintético |
+| FE13 | Lab | evidência real/pendente distinguida, versões e metodologia |
+| FE14 | Ghost Mode | sincronização, legenda e alternativa lado a lado |
+| FE15 | temas | contraste, persistência e sol forte quando possível |
+| FE16 | acessibilidade/mobile | teclado, leitor de tela, toque e orientação |
+| FE17 | refinamento e mensagens | falhas do teste de uso tratadas, regressão do fluxo |
+
+### 17.3. Backend — 15 tarefas
+
+| ID | Produto concreto | Evidência mínima de aceite |
+|---|---|---|
+| BE01 | schema de API, domínio e erros | contratos acordados com CV/FE |
+| BE02 | ambiente, variáveis e quotas | setup local/remoto sem segredos no git |
+| BE03 | migrations, constraints, seeds sintéticos | recriação limpa do banco |
+| BE04 | grants/RLS/ownership | teste com dois usuários e visitante |
+| BE05 | sessão demo e auth adulta | criação, expiração e autorização |
+| BE06 | persistência de tentativa | leitura posterior autorizada e transação íntegra |
+| BE07 | recálculo server-side | score forjado e evidência incompatível não entram |
+| BE08 | idempotência | duplicação e requisição concorrente |
+| BE09 | ranking derivado | marcas aceitas, protocolo e grupo corretos |
+| BE10 | consulta de histórico | paginação básica, ordem e isolamento |
+| BE11 | namespace e reset demo | dois visitantes não interferem |
+| BE12 | exclusão/retensão | dados próprios removidos, outros preservados |
+| BE13 | CI e deploy | build/test em PR, preview e URL pública |
+| BE14 | ranking evolução/participação | baseline, incerteza e denominador testados |
+| BE15 | segurança/monitoramento | regressões, logs mínimos e nenhuma chave exposta |
+
+### 17.4. Produto/QA — 15 tarefas
+
+| ID | Produto concreto | Evidência mínima de aceite |
+|---|---|---|
+| PD01 | matriz do regulamento, origem e licenças | cada requisito tem dono e evidência |
+| PD02 | consulta à organização | mensagem enviada, resposta registrada ou pendência |
+| PD03 | recrutamento adulto e autorização | plano de segurança e consentimento adequados |
+| PD04 | entrevistas atletas | notas anonimizadas e temas recorrentes |
+| PD05 | entrevistas treinadores/atléticas | prática atual, dor e processo de compra |
+| PD06 | fontes e mercado | anos, limites e hipóteses separados de fatos |
+| PD07 | hipótese comercial/piloto | sinais reais, não contratos presumidos |
+| PD08 | protocolo de validação | referência, amostra, condições e plano de análise |
+| PD09 | usabilidade | tarefas, conclusão, tempo e falhas |
+| PD10 | iterações | registro antes/depois e motivo da melhoria |
+| PD11 | documentação | README e reprodução por pessoa externa |
+| PD12 | roteiro | claims auditados e demo como centro |
+| PD13 | vídeo | versão pública sem login, duração <= 3 min |
+| PD14 | submissão | links e recibo conferidos |
+| PD15 | banca | simulação, objeções, revisão cruzada |
+
+### 17.5. Capacidade auditada e cobertura de extensões
+
+| Frente | Tarefas P0 / P1 / P2 | Horas P0 / P1 / P2 | Total |
+|---|---|---|---:|
+| A | 13 / 2 / 1 | 40 / 6 / 4 | 50h |
+| B | 15 / 2 / 0 | 43 / 6 / 0 | 49h |
+| C | 14 / 1 / 0 | 38 / 4 / 0 | 42h |
+| D | 14 / 1 / 0 | 42 / 3 / 0 | 45h |
+| Total | 56 / 6 / 1 | 163 / 19 / 4 | 186h |
+
+A análise aritmética das 63 tarefas confirma os totais. A margem nominal de 29h não significa que todos os extras cabem: P1 e P2 somam 23h somente para os itens já estimados, deixando 6h se todos forem executados. Além disso, parte do escopo opcional não tinha tarefa própria. Não comprometer integração, repouso e correções com essa soma.
+
+Para não deixar funcionalidades sem rastreio, as seguintes extensões são propostas separadas do backlog original de 63; ativar apenas após G3/G4 e reavaliar horas. Não contam na estimativa P0.
+
+| ID adicional | Funcionalidade | P | h preliminares | Dependências | Aceite |
+|---|---|---|---:|---|---|
+| EX01 | F17 onboarding e conquistas | 1 | 3 | FE03, FE09, BE10 | recorde sustentado; sem pressão ou penalidade |
+| EX02 | F19 painel treinador sintético | 2 | 5 | BE09, FE10, G4 | turma fictícia e evolução; sem dados reais |
+| EX03 | F20 métricas biomecânicas | 2 | 6 | CV13, G4 | protocolo e referência; experimental se não validado |
+| EX04 | F22 salto com passada/alcance | 2 | 8 | CV13, G4 | novo protocolo, benchmark independente |
+| EX05 | F15/F16 interface das abas adicionais | 1 | 3 | BE14, FE11 | abas de evolução e participação com regras claras |
+
+Total opcional adicional estimado: 25h. Estes itens são novos desdobramentos do escopo que já existia; não são compromisso de entrega. Usar estimativas como hipóteses. Com 192h de capacidade e 163h de P0, selecionar P1/P2 por valor por hora e risco. Se a equipe tiver apenas 6 horas produtivas por pessoa por dia, 144h totais implicam déficit de 19h frente ao P0 estimado: reduzir complexidade ou redistribuir trabalho antes de iniciar extras.
+
+### 17.6. Matriz de rastreabilidade de funcionalidades
+
+| Funcionalidade | Tarefas principais | Gate |
+|---|---|---|
+| F01 | FE01–03, FE16, BE13 | G1/G5 |
+| F02 | CV04, CV12, FE12, BE11 | G3 |
+| F03–04 | FE04, BE01, BE03 | G2 |
+| F05 | FE05–06, CV05 | G2 |
+| F06 | CV02–06, FE07 | G2 |
+| F07 | CV07–09, CV12, CV13 | G2/G4 |
+| F08–09 | CV10–11, FE08–09, BE07 | G3/G4 |
+| F10 | BE06, BE08, BE10, FE10 | G3 |
+| F11 | BE09, FE11 | G3 |
+| F12 | BE04–05, BE11–12, BE15, PD01 | G3/G5 |
+| F13 | CV11, CV13, FE13, PD08 | G4 |
+| F14 | CV14, FE14 | G4 se viável |
+| F15–16 | BE14, EX05 | Após G3 |
+| F17 | EX01 | Após G3 |
+| F18 | FE15 | Após G3 |
+| F19–22 | EX02, EX03, CV16, EX04 | Após G4 se viável |
+| F23–25 | roadmap | Pós-hackathon |
+
+## 18. Plano diário detalhado, integração e decisões de corte
+
+### 18.1. Dia 24 — fundação
+
+Manhã: reunião de decisão e disponibilidade; responsável D confere regulamento e envia perguntas; A audita branches e define adaptador; C e A congelam esquema de integração v1; B cria shell e tokens. Tarde: A executa primeiro smoke de pose e fixture; B constrói home/seleção; C configura deploy e banco/CI; D organiza referência, voluntários e roteiro preliminar. Noite: integrar primeira versão pública e registrar G1 (URL, SHA, smoke e pendências).
+
+### 18.2. Dia 25 — fatia vertical
+
+A implementa fases e tempo de voo antes de refinamento parabólico; B captura, preparação, overlay e resultado com contrato real; C sessão, persistência e idempotência; D entrevistas e validação controlada. Integrar cedo um caso válido. Ao final, G2 exige medida calculada e registro persistido. Se o salto não for suficientemente confiável, decidir em reunião curta entre corrigir protocolo/restringir condições e ativar agachamento, com tarefas e critérios próprios. Não apresentar agachamento como medida de salto.
+
+### 18.3. Dia 26 — MVP
+
+A consolida quality gates, incerteza inicial e motor compartilhado; B liga demo, ranking, passaporte e resultado; C recálculo, consultas, RLS e isolamento; D testa jornada completa e coleta feedback. G3 exige acesso anônimo, um caso válido e um rejeitado, atualização real e histórico. Após G3, iniciar somente P1 selecionado. Se G3 falhar, suspender novas features.
+
+### 18.4. Dia 27 — diferenciação e evidência
+
+A mede desempenho em dispositivos, registra benchmark e erros; B Lab e Ghost, com versão lado a lado pronta; C segurança e concorrência; D consolida evidências, testa usabilidade, revisa fontes e pitch. G4: evidência publicada, limites claros, nenhuma alegação sem suporte. Priorizar Ghost por valor visual, não comprometer P0.
+
+### 18.5. Dia 28 — release candidate
+
+A congela algoritmo e faz regressões; B ajusta interface, estados de erro e mobile; C valida deploy, migrations, quotas e E2E; D finaliza README, licenças, roteiro e ensaio. Teste cruzado em dispositivos; bug crítico bloqueia release. G5: nenhuma feature nova após a versão candidata, salvo decisão fundamentada e reteste.
+
+### 18.6. Dia 29 — submissão antecipada
+
+| Horário | Responsáveis | Entrega |
+|---|---|---|
+| 09–11h | todos | teste completo e checklist em navegador externo |
+| 11–12h | A/B/C | somente correções críticas |
+| 13–15h | D + todos | gravação final com versão candidata |
+| 15–17h | D | edição e publicação de vídeo |
+| 17–18h | C/D | conferir docs, links, SHA, licenças |
+| 18–19h | todos | banca simulada e revisão de claims |
+| 19–20h | representante | submissão e confirmação |
+| 20–21h | C/D | conferir recibo e links em janela anônima |
+
+G6: submissão confirmada, commit e URL correspondentes, responsável por contingência definido.
+
+### 18.7. Dia 30 — reserva
+
+Não planejar feature nova. Corrigir apenas incidentes críticos, antes do freeze interno às 18h; se precisar reenviar, verificar regras e confirmar última versão no painel. Prazo oficial conforme documentação: 23h59 de Brasília. G7: registrar SHA, deployment e recibo; não alterar código após o limite oficial até autorização presencial.
+
+### 18.8. Caminho crítico e governança
+
+```mermaid
+flowchart TD
+ C[CV02 + BE01: contrato] --> I[CV03–06: inferência / fixtures]
+ C --> F[FE01–09: UX]
+ C --> B[BE02–08: persistência]
+ I --> M[CV07–12: medição e qualidade]
+ M --> V[BE07 + FE09: integração]
+ F --> V
+ B --> V
+ V --> D[FE12 + BE09–11: demo, ranking e histórico]
+ V --> L[CV13 + FE13: benchmark e Lab]
+ D --> R[G5: release candidate]
+ L --> R
+ R --> S[PD13–15: vídeo, banca e submissão]
+```
+
+Ritual diário: 9h plano de entregas, meio-dia integração/smoke, fim do dia demonstração e gate. O proprietário de cada frente deve informar impedimento, evidência e próxima ação; bloqueio de 60–90 minutos exige colaboração. Evitar PRs longos. Frontend pode desenvolver com mocks declarados; integração só é concluída com contrato real e teste. Atualizações devem conter: commit/PR, itens aceitos, testes executados, regressões, bloqueios, decisão de corte e ações do próximo dia.
+
+Modelo de issue: título [ID] ação; objetivo/valor; P e gate; dono; dependências; estimativa; escopo incluído/excluído; critérios testáveis; testes/evidência; rollback quando necessário. Milestones G1–G7. Board: backlog, ready, in progress, review, verified, blocked. Só verified conta como entrega. Status do projeto deve ser por gates e requisitos verificados, não porcentagem arbitrária.
+
+## 19. Homologação: protocolos, matriz de testes e evidências
+
+### 19.1. Plano de validação exploratória
+
+Antes de medir, D/A registram protocolo, definição de altura, referência independente, dispositivos, condições, consentimento, critérios de exclusão, método de análise e separação de calibração/teste. Testar em adultos voluntários, espaço seguro, piso estável, pausas e possibilidade de interromper. Não recolher mais dados do que necessários. Procurar diversidade de corpos, sexos e tons de pele com autorização, sem publicar identificação ou fazer alegações de generalização a partir de amostra pequena.
+
+| Métrica | Definição / requisito de relatório |
+|---|---|
+| MAE | média de abs(estimado - referência), em cm; meta exploratória <=3 cm a 30 FPS |
+| RMSE | raiz da média dos erros quadráticos |
+| Viés | média dos erros com sinal, convenção explícita |
+| Mediana | mediana dos erros absolutos |
+| Cobertura | aceitas / todas as tentativas; separar experimentais e rejeitadas |
+| Taxa de rejeição | rejeitadas / analisadas; apresentar motivos e denominador |
+| Repetibilidade | dispersão de tentativas comparáveis; não confundir variação do atleta com erro de medida |
+| Incerteza | método, unidade, intervalo e condições de validade; pendente se insuficiente |
+| Latência | download/cold start, inferência e cálculo separados; reportar n e dispositivo |
+| FPS efetivo | observado por timestamps, não FPS nominal |
+| Usabilidade | conclusão, tempo, falha, compreensão de qualidade e intenção de retorno |
+
+Metas: 8–12 adultos, 24–60 tentativas, 3 aparelhos incluindo Android de entrada, 30 e 60 FPS quando viável, pelo menos 10 casos sintéticos inválidos, 5–10 testes de uso. Não substituir referência independente por outro detector sem explicitar que é comparação de modelos. Não extrapolar efeito de gamificação ou precisão clínica. Sem referência adequada, publicar verificação sintética e status experimental, não preencher números fictícios.
+
+### 19.2. Casos de teste identificáveis
+
+| ID | Cenário | Resultado esperado |
+|---|---|---|
+| CT01 | trajetória analítica, 30/60/120 FPS | altura dentro da tolerância matemática definida |
+| CT02 | jitter, frames duplicados e gaps | flags ou rejeição conforme configuração |
+| CT03 | nenhum atleta ou duas pessoas | rejeição explicada |
+| CT04 | pés cortados e oclusão no takeoff | experimental/rejeitado sem ranking |
+| CT05 | câmera móvel e mudança de escala | flag e decisão documentada |
+| CT06 | sem salto, dois saltos ou aterrissagem ambígua | não aceitar fora de protocolo |
+| CT07 | estimadores divergentes | experimental e diagnóstico |
+| CT08 | ausência de calibração empírica | não mostrar margem inventada |
+| CT09 | demo sintética D01/D02 | cálculo reproduzível e origem indicada |
+| CT10 | caso rejeitado D03 | nenhum score elegível |
+| CT11 | repetir requisição/idempotência | mesmo resultado sem duplicata |
+| CT12 | requisições concorrentes | restrições preservadas |
+| CT13 | score arbitrário/protocolo inexistente | rejeição de payload ou recálculo correto |
+| CT14 | usuário acessa tentativa de outro | negação |
+| CT15 | duas sessões demo / reset | isolamento preservado |
+| CT16 | ranking por protocolo/grupo | apenas aceitos comparáveis |
+| CT17 | empate e baseline incompleta | regra determinística; sem evolução indevida |
+| CT18 | câmera negada | orientação e demo disponível |
+| CT19 | download do modelo falha/timeout | erro, retry e cancelamento |
+| CT20 | saída da câmera e mudança de rota | tracks e worker liberados |
+| CT21 | Android de entrada e rede limitada | fluxo funcional ou limitação explícita |
+| CT22 | Ghost, dois protocolos incompatíveis | comparação válida ou aviso, sem conclusão falsa |
+| CT23 | teclado, contraste, leitura e toque | estados acessíveis, informação não só por cor |
+| CT24 | privacidade, exclusão e logs | dados próprios removidos e demais preservados |
+| CT25 | build limpo, deploy, refresh e URL direta | versão reproduzível, pública e sem login |
+| CT26 | vídeo final e links | duração <=3 min, acesso anônimo, dados sintéticos |
+| CT27 | integração real de modelo | inferência efetiva, não stub; registrar origem |
+| CT28 | revisão de dependências e assets | licenças e atribuições documentadas |
+
+Cada caso precisa de dono, evidência, resultado PASS/FAIL/BLOCKED e referência ao commit. A tolerância de CT01 depende de discretização e fixture; não confundir com MAE humano. CI obrigatório para lógica, schema e build; E2E e testes em dispositivos registrados. Os experimentais em Python têm pipeline/testes separados e não bloqueiam a PWA se não forem incorporados.
+
+### 19.3. Artefatos de evidência
+
+```text
+docs/decisions/              # ADRs e decisões de corte
+docs/protocols/              # protocolo versionado e qualidade
+docs/validation/             # método, relatório agregado, matriz CT
+docs/privacy/                # finalidade, retenção, exclusão
+benchmarks/                  # runners, fixtures e resultados permitidos
+fixtures/synthetic/          # manifesto, origem, ground truth, versões
+THIRD_PARTY_NOTICES.md        # licenças e atribuições
+README.md                    # execução, demo, escopo, limites e links
+```
+
+Manifesto de evidência: ID, tipo (sintético/privado agregado), SHA do código, versão do protocolo/modelo, dispositivo, comando, data, resultado, limitações, responsável e localização do artefato permitido. Vídeo real não deve ser publicado como artefato de benchmark.
+
+## 20. Comunicação, impacto, operação e estratégia de final
+
+### 20.1. Matriz de apresentação e afirmações verificáveis
+
+| Mensagem | Prova | Evitar |
+|---|---|---|
+| Celular como ferramenta acessível | demo web e teste em aparelho de entrada | "funciona em qualquer celular" |
+| IA transforma movimento em métrica | vídeo sintético passando por inferência e cálculo | chamar replay de inferência ao vivo |
+| Evolução e engajamento | histórico, comparação, testes e literatura com fonte | dizer que melhora saúde clinicamente ou já comprovou retenção |
+| Inclusão e alcance | dados brasileiros com ano e população, privacidade | usar dado agregado de vôlei/basquete/handebol como exclusivo de vôlei |
+| Diferenciação | foco local, comunidade e protocolo transparente | negar concorrência existente |
+| Negócio | treinador como comprador potencial, entrevistas e hipótese B2B | receita, parceria, contrato ou retenção inventados |
+
+Os dados de mercado e problema do projeto original permanecem referências: PNS 2019, PeNSE, PNAD 2015 (vôlei, basquete e handebol agrupados), TIC Domicílios, entre outros. PD06 deve confirmar a fonte primária, ano e denominador antes de usar qualquer número no pitch. Não inferir que ausência de concorrente encontrado é inexistência de concorrente. Exibir preços e projeções comerciais como hipótese ou referência datada.
+
+Roteiro de entrevista treinador: como acompanha evolução; se mede salto e com qual método; qual motivo faria atletas retornarem; quem decide compra, quanto pagaria e quais impedimentos; interesse em piloto, sem pressionar. Atleta: prática atual, dificuldade de medir, convite, compreensão do resultado e próximo uso. Meta de três melhorias: problema observado → mudança → reteste → resultado.
+
+### 20.2. Roteiro detalhado da demo e vídeo
+
+1. 0:00–0:15: problema concreto em quadra e dado com fonte/ano.
+2. 0:15–0:30: MOVA e benefício em uma frase, público e escolha de modalidade.
+3. 0:30–1:10: selecionar clipe sintético, mostrar inferência, esqueleto e fases; resultado calculado.
+4. 1:10–1:25: qualidade, tentativa rejeitada se couber, atualização de ranking.
+5. 1:25–1:45: Ghost ou comparação simples, histórico, evolução sem falsa precisão.
+6. 1:45–2:10: abrir Lab, arquitetura, método, amostra/erro/limitações.
+7. 2:10–2:30: impacto potencial, feedback real, acessibilidade e privacidade.
+8. 2:30–2:45: modelo de negócio como hipótese, grupos/treinadores e roadmap.
+9. 2:45–2:55: frase final e convite para demo autônoma.
+
+Ensaiar com cronômetro, verificar legibilidade em celular e áudio, deixar margem de cinco segundos. Usar o produto real durante a maior parte do vídeo. Se um item não estiver implementado, cortar a afirmação ou apresentar roadmap, não simular como real. Sem dado pessoal ou vídeo real em material de demo de saúde conforme regra aplicável. Conferir condições com organização.
+
+### 20.3. Perguntas de banca e evidência de resposta
+
+| Pergunta | Resposta preparada |
+|---|---|
+| Por que não HomeCourt? | foco local, vôlei/basquete, acesso e evolução; reconhecer concorrente e não afirmar exclusividade |
+| A IA é própria? | pose aberta, contribuição em protocolos, integração, qualidade, produto e benchmark |
+| Qual precisão? | apresentar erro, n, referência, condições e cobertura; se pendente, dizer |
+| E fraude? | sessão, recálculo, flags, limites; cliente adulterável, sem garantia absoluta |
+| Isso melhora saúde? | propósito de incentivo à atividade, evidência geral e teste inicial; sem efeito clínico comprovado |
+| Por que 18+? | reduzir risco de privacidade e segurança; expansão a menores exige proteções próprias |
+| Quem paga? | hipótese treinador/escolinha; resultados das entrevistas, não receita presumida |
+| E internet/aparelho fraco? | processamento local, clipe curto e testes, limites medidos |
+| Como escalar? | arquitetura modular, grupos e validação de piloto; projeções rotuladas |
+| Por que só salto? | prova comum às duas modalidades, melhor caminho de validação; extensões depois |
+| O que acontece se o algoritmo erra? | classifica experimental/rejeita, explica e evita ranking injusto |
+| Qual moat? | rede e histórico autorizado como hipótese de vantagem futura, não ativo comprovado |
+
+Banca interna usa 4 critérios de 0–10, total /40 e meta 38/40, com evidência e ação para cada lacuna. Não considerar meta interna como nota oficial.
+
+### 20.4. Operação e contingência de deploy
+
+- C configura preview e produção, link estável e seeds sintéticos. A/B testam cold start, reset, timeouts e modelo carregado. D testa sem login em rede externa.
+- Antes de submeter, registrar SHA, versão de dependências/modelo/protocolo, URL, vídeo e migrations aplicadas; salvar evidência da submissão. Fixar versão pública correspondente.
+- Se banco estiver indisponível antes do freeze, ativar fallback local explicitamente rotulado, com ranking de sessão e sem alegar serviço remoto. Não substituir benchmark por dados mockados. Se inferência sintética falhar, indicar pipeline parcial e consultar aceitação; não esconder.
+- Após o freeze, somente ações expressamente permitidas pela organização. Monitorar acessibilidade da demo e comunicar incidentes; não realizar alteração de código, dependência ou comportamento como "manutenção" sem autorização.
+
+### 20.5. Preparação após entrega e final
+
+| Período | Entregável | Limite |
+|---|---|---|
+| 01/12 | respostas de banca, narrativa e roteiro de slides | fora do repositório congelado |
+| 02/12 | classificação e instruções | verificar anúncio oficial |
+| 03–04/12 | confirmar presença até 23h59, logística de todos | se finalista |
+| 05–09/12 | slides, estudo de caso, simulações e objeções | sem alteração de código |
+| 10–11/12 | ensaio cronometrado, equipamento, demo congelada e vídeo de contingência | sem atualização do produto |
+| 12/12 | desenvolvimento somente quando autorizado e presencial conforme regras; apresentação | agenda oficial prevalece |
+| até 15/12 | manter repositório público e acessível | conforme exigência |
+
+Não contar com a final para completar o núcleo. Priorizar o ajuste de maior impacto que seja permitido e testável no tempo comunicado. Preparar versão demonstrável congelada e material de contingência, respeitando regras.
+
+## 21. Controle de entrega e próximos passos executáveis
+
+### 21.1. Checklist por frente
+
+#### Elegibilidade e segurança
+- [ ] Equipe inscrita, 18+, representante e trilha confirmados.
+- [ ] Repositório e histórico dentro das regras, origem de componentes auditada.
+- [ ] Licenças de modelos, pesos, código, fontes, vídeos e assets conferidas.
+- [ ] Organização consultada sobre sintéticos, trilha e captura ao vivo na final.
+- [ ] Demo e vídeo públicos somente com conteúdo sintético permitido.
+- [ ] Dados mínimos, privacidade, exclusão e segurança física verificadas.
+
+#### IA e Lab
+- [ ] Modelo móvel e adaptador funcionando em inferência real.
+- [ ] Timestamps, fases, cálculo, validação e versões comprovados.
+- [ ] Fixtures válidas, inválidas e testes analíticos reproduzíveis.
+- [ ] Benchmark, referência, amostra, erro e cobertura documentados.
+- [ ] Android de entrada e outros dispositivos testados ou lacunas registradas.
+- [ ] Margem não fabricada; experimentais/rejeitadas excluídas do ranking.
+- [ ] Ghost ou comparação simples com dados comparáveis.
+
+#### Produto e experiência
+- [ ] Home, missões de ambos os esportes e preparação.
+- [ ] Captura segura e estados de erro, fallback sem câmera.
+- [ ] Resultado, histórico, ranking e Lab.
+- [ ] Demo anônima com D01–D06, isolamento e reset.
+- [ ] Contraste, toque, acessibilidade, mobile e rede fraca.
+- [ ] Nenhum mock apresentado como execução real.
+
+#### Backend e infraestrutura
+- [ ] Contratos, migrations, seeds sintéticos e versões registrados.
+- [ ] Sessões, autorização, RLS e acesso cruzado testados.
+- [ ] Recálculo e idempotência com teste concorrente.
+- [ ] Ranking derivado, histórico e exclusão.
+- [ ] CI, build e E2E; URL HTTPS pública.
+- [ ] Nenhum segredo ou dado pessoal exposto; logs mínimos.
+- [ ] SHA e versão de deploy vinculados à entrega.
+
+#### Pesquisa e submissão
+- [ ] Entrevistas e testes reais documentados com autorização.
+- [ ] Fontes, mercado e claims revisados.
+- [ ] Melhorias e limitações apresentadas honestamente.
+- [ ] README, setup, arquitetura, roadmap, licenças e referências.
+- [ ] Vídeo <=3 min, links sem login, banca simulada.
+- [ ] Formulário e confirmação antes do prazo.
+- [ ] Congelamento respeitado e presença confirmada se classificado.
+
+### 21.2. Ordem imediata de execução
+
+| Ordem | Ação | Dono proposto | Saída |
+|---:|---|---|---|
+| 1 | confirmar papéis e disponibilidade | todos | matriz de responsabilidades |
+| 2 | consultar organização | D | mensagem e resposta/pendência |
+| 3 | auditar branches, origem e licenças | A/C/D | inventário e decisão de integração |
+| 4 | criar issues e milestones | liderança técnica | board com IDs e gates |
+| 5 | definir contrato pose/API | A/C com B | schema e fixtures iniciais |
+| 6 | inicializar app | B | shell executável |
+| 7 | ambiente banco/CI/deploy | C | preview HTTPS |
+| 8 | smoke MediaPipe e fixture | A/D | inferência comprovada |
+| 9 | integrar fatia vertical | A/B/C | primeira medida e persistência |
+| 10 | registrar G1/G2, riscos e evidências | todos | status verificável |
+
+### 21.3. Rastreabilidade do planejamento original
+
+| Tema da análise original | Localização nesta versão |
+|---|---|
+| 1. Diagnóstico e branches experimentais | §1, §15.3 |
+| 2. Critérios e posicionamento | §1, §20 |
+| 3. Escopo | §2, §17.5–17.6 |
+| 4. Experiência e jornada visual | §2, §14 |
+| 5. Arquitetura e stack | §3, §15–16 |
+| 6. IA e metodologia | §4, §15, §17.1, §19 |
+| 7. Frontend e Ghost | §14, §17.2 |
+| 8. Backend e dados | §5, §16, §17.3 |
+| 9. Produto, pesquisa e pitch | §8, §17.4, §19–20 |
+| 10. Demo | §5, §14, §19 |
+| 11. Divisão e capacidade | §6, §17.5 |
+| 12. Cronograma | §7, §18 |
+| 13. Caminho crítico | §7, §18.8 |
+| 14. Homologação | §8, §19 |
+| 15. GitHub | §9, §18.8 |
+| 16. Contingências | §10, §18, §20.4 |
+| 17. Apresentação | §11, §20 |
+| 18. Período pós-submissão | §11, §20.5 |
+| 19. Checklist | §12, §21.1 |
+| 20. Ações e pendências | §13, §21.2 |
+| 21. Direção final | §14.1 e regra de execução |
+
+Esta versão preserva as 63 tarefas e incorpora detalhes que antes estavam apenas na análise da conversa, convertendo diagramas, conceitos visuais e controles interativos em especificações Markdown/Mermaid, tabelas e checklists utilizáveis no GitHub. Nenhuma atribuição nominal, issue, serviço, benchmark ou funcionalidade foi criada automaticamente por este documento.
