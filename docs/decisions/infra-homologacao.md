@@ -22,3 +22,8 @@ Preparação: schema-draft.sql, com RLS e grants server-only. Testes da nova wor
 - Teste SQL descartável: novo workflow, verificar execução do commit que inclui este documento.
 - Staging: verificar READY e resposta HTTP real; não inferir sucesso de aplicação apenas pelo build.
 - Homologação final bloqueada por ausência de banco remoto e motor CV12; teste físico/Android e câmera permanecem pendentes. Não usar dados reais em demo.
+
+## Evidências confirmadas nesta revisão
+- Staging READY, target=staging, runtime do commit fd4df51. HTTP 200 em /, /demo, /manifest.webmanifest e /api/demo (modo local, sem banco remoto). Acesso por autenticação Vercel; nenhuma chave compartilhada no repositório.
+- [CI de aplicação](https://github.com/Lucas-Andrade-Silva/hackasEsporteFilasOff/actions/runs/45922107093) e [CI SQL descartável](https://github.com/Lucas-Andrade-Silva/hackasEsporteFilasOff/actions/runs/45922107330): sucesso no commit 861dcc9. O teste SQL não valida integração remota PostgREST nem isolamento via cookie.
+- Acrescentados testes E2E Chromium desktop e emulação Pixel 7, e restrição SQL para fonte ausente. Acompanhar CI da revisão atual; emulação não substitui teste Android físico.

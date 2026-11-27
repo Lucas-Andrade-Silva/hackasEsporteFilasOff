@@ -12,7 +12,7 @@ create table public.demo_attempts (
  session_id uuid not null references public.demo_sessions(id) on delete cascade,
  idempotency_key uuid not null,
  fixture_id text not null check(fixture_id in ('block-base','block-next','rebound-base','rebound-next','feet-cut')),
- result jsonb not null check(jsonb_typeof(result)='object' and result->>'source'='synthetic_pose_replay'),
+ result jsonb not null check(jsonb_typeof(result)='object' and (result->>'source'='synthetic_pose_replay') is true),
  created_at timestamptz not null default now(),
  unique(session_id,idempotency_key)
 );

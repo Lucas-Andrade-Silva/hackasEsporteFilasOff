@@ -35,6 +35,10 @@ begin
  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',gen_random_uuid(),'block-base','{"source":"real"}');
  raise exception 'Real data accepted'; exception when check_violation then null; end;
  begin
+ insert into public.demo_attempts(session_id,idempotency_key,fixture_id,result) values
+ ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',gen_random_uuid(),'block-base','{}');
+ raise exception 'Missing source accepted'; exception when check_violation then null; end;
+ begin
  insert into public.demo_sessions(token_hash,expires_at) values(repeat('c',64),now()-interval '1 hour');
  raise exception 'Invalid expiry accepted'; exception when check_violation then null; end;
 end $$;
