@@ -19,6 +19,7 @@ jobs:
           node-version: '22'
       - run: npm install --no-audit --no-fund
       - run: npm test
+      - run: node benchmarks/synthetic-jump.mjs
       - run: npm run typecheck
       - run: npm run build
       - name: API and page smoke

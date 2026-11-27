@@ -11,6 +11,7 @@ export type Measurement = {
   unit: "cm" | "repetitions"; value: number | null;
   uncertainty: number | null; uncertaintyMethod: string | null;
   status: AttemptStatus; effectiveFps: number | null; qualityFlags: string[];
+  diagnostics?: { flightDurationMs:number; timingBracketCm:[number,number]; parabolaHeightCm:number|null; fitR2:number|null; fitRmseNormalized:number|null; contactMethod:string; sampleCount:number } | null;
   events: { name: "takeoff" | "apex" | "landing"; timestampMs: number }[];
 };
 export interface ExerciseProtocol {

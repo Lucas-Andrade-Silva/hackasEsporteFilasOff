@@ -45,3 +45,17 @@ test("basketball demo and capture disabled",async({page})=>{
  await expect(page.getByText("Desativada neste ambiente.",{exact:false})).toBeVisible();
  await expect(page.locator("video")).toHaveCount(0);
 });
+
+test("Ghost compares two valid synthetic attempts on shared clock",async({page})=>{
+ await page.goto("/demo");
+ await page.getByRole("button",{name:/Bloqueio · primeira tentativa/}).click();
+ await expect(page.locator(".metric")).toContainText("19,6");
+ await page.getByRole("link",{name:"Tentar novamente"}).click();
+ await page.getByRole("button",{name:/Bloqueio · segunda tentativa/}).click();
+ await expect(page.locator(".metric")).toContainText("30,7");
+ await page.getByRole("link",{name:"Comparar no Ghost"}).click();
+ await expect(page.getByRole("heading",{name:"Ghost Mode"})).toBeVisible();
+ await expect(page.getByText("Diferença sintética: 11,1 cm")).toBeVisible();
+ await page.getByRole("slider").fill("300");
+ await expect(page.getByText("Tempo após decolagem: 300 ms")).toBeVisible();
+});
