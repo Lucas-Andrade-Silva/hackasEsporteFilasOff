@@ -2,8 +2,8 @@ import type {PoseFrame} from "@/contracts/attempt";
 import {adaptPose,createPoseModel} from "./mediapipe-adapter";
 export type PixelFrame={timestampMs:number;pixels:ImageData};
 export const MAX_BYTES=64*1024*1024;
-export function snapshot(video:HTMLVideoElement,canvas:HTMLCanvasElement,timestampMs:number,frames:PixelFrame[]){
- const scale=Math.min(1,480/Math.max(video.videoWidth,video.videoHeight));
+export function snapshot(video:HTMLVideoElement,canvas:HTMLCanvasElement,timestampMs:number,frames:PixelFrame[],maxSide=480){
+ const scale=Math.min(1,maxSide/Math.max(video.videoWidth,video.videoHeight));
  const w=Math.max(1,Math.round(video.videoWidth*scale)),h=Math.max(1,Math.round(video.videoHeight*scale));
  if(!video.videoWidth||!video.videoHeight||!Number.isFinite(timestampMs))return;
  if(frames.length&&timestampMs<=frames[frames.length-1].timestampMs)return;
@@ -41,4 +41,17 @@ export async function inferBuffered(frames:PixelFrame[],signal:AbortSignal,onFra
  await new Promise<void>(r=>setTimeout(r,0));
  }return {frames:output,inferenceMs};
  }finally{model.close();frames.length=0;canvas.width=1;canvas.height=1}
+}
+
+export async function captureBuffered(video:HTMLVideoElement,signal:AbortSignal,durationMs=5000):Promise<PixelFrame[]>{
+ if(!video.requestVideoFrameCallback||!video.cancelVideoFrameCallback)throw Error("VIDEO_CALLBACK_UNAVAILABLE");
+ if(signal.aborted)throw Error("CANCELLED");
+ const frames:PixelFrame[]=[],canvas=document.createElement("canvas");
+ return new Promise((resolve,reject)=>{
+ let done=false,handle=0;const timer=setTimeout(()=>finish(),durationMs);
+ const finish=(e?:Error)=>{if(done)return;done=true;clearTimeout(timer);video.cancelVideoFrameCallback(handle);signal.removeEventListener("abort",abort);if(e){frames.length=0;reject(e)}else resolve(frames)};
+ const abort=()=>finish(Error("CANCELLED"));
+ const next:VideoFrameRequestCallback=(_now,meta)=>{if(done)return;try{snapshot(video,canvas,meta.mediaTime*1000,frames,320);handle=video.requestVideoFrameCallback(next)}catch(e){finish(e instanceof Error?e:Error("FRAME_FAILED"))}};
+ signal.addEventListener("abort",abort,{once:true});handle=video.requestVideoFrameCallback(next);
+ });
 }
