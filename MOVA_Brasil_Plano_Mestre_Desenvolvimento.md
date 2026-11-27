@@ -2,7 +2,7 @@
 
 > O jogo que acontece fora da tela. Todo movimento conta.
 >
-> Versão 2.0 — 24/11/2026 — Plano integral de execução, com especificação operacional e rastreabilidade.
+> Versão 2.1 — Plano base de 24/11/2026 — Revisão exclusivamente da divisão de pessoas (2 integrantes), mantendo datas, tarefas, escopo e gates.
 
 ## 0. Referências e premissas
 
@@ -28,7 +28,7 @@ Este documento consolida o plano operacional, sem substituir a documentação or
 | Final presencial, São Paulo | 12/12 |
 | Repositório público pelo menos até | 15/12 |
 
-Premissas: quatro integrantes (papéis a definir), seis dias de execução de 24 a 29/11 inclusive, orçamento de infraestrutura sem gasto não autorizado. Confirmar disponibilidade real e mudanças de regulamento.
+Premissas: dois integrantes (nomes a definir), seis dias de execução de 24 a 29/11 inclusive, orçamento de infraestrutura sem gasto não autorizado. Confirmar disponibilidade real e mudanças de regulamento. As quatro frentes A, B, C e D continuam existindo como papéis de trabalho, não como quatro pessoas: Pessoa 1 assume A e D; Pessoa 2 assume B e C.
 
 ## 1. Objetivo e estado inicial
 
@@ -210,9 +210,9 @@ Cenários: D01 bloqueio válido; D02 rebote válido; D03 rejeição com motivo; 
 
 ## 6. Backlog executável
 
-IDs para futuras issues; P=prioridade, h=horas-pessoa estimadas, dependências mínimas (trabalho antecipado pode usar contratos e mocks identificados). Tudo pendente de comprovação na main. Papéis não são atribuições nominais.
+IDs para futuras issues; P=prioridade, h=horas-pessoa estimadas, dependências mínimas (trabalho antecipado pode usar contratos e mocks identificados). Tudo pendente de comprovação na main. Papéis não são atribuições nominais. Divisão: Pessoa 1 = A (IA) + D (Produto/QA); Pessoa 2 = B (Frontend) + C (Backend). As atividades de cada frente e suas datas permanecem integralmente iguais às do plano original.
 
-### A — IA, biomecânica e benchmark
+### A — IA, biomecânica e benchmark (Pessoa 1)
 
 | ID | P | h | Dep. | Tarefa / aceite |
 |---|---|---:|---|---|
@@ -233,7 +233,7 @@ IDs para futuras issues; P=prioridade, h=horas-pessoa estimadas, dependências m
 | CV15 | 1 | 3 | CV01,CV13 | Comparar modelos com mesma referência |
 | CV16 | 2 | 4 | CV01,G4 | Replay de bola experimental |
 
-### B — Frontend e UX
+### B — Frontend e UX (Pessoa 2)
 
 | ID | P | h | Dep. | Tarefa / aceite |
 |---|---|---:|---|---|
@@ -255,7 +255,7 @@ IDs para futuras issues; P=prioridade, h=horas-pessoa estimadas, dependências m
 | FE16 | 0 | 3 | FE12 | Acessibilidade, mobile e teclado |
 | FE17 | 0 | 4 | FE12 | Refinamento, estados e erros |
 
-### C — Backend e DevOps
+### C — Backend e DevOps (Pessoa 2)
 
 | ID | P | h | Dep. | Tarefa / aceite |
 |---|---|---:|---|---|
@@ -275,7 +275,7 @@ IDs para futuras issues; P=prioridade, h=horas-pessoa estimadas, dependências m
 | BE14 | 1 | 4 | BE09 | Evolução e participação |
 | BE15 | 0 | 3 | BE07,BE11,BE13 | Segurança, logs e monitoramento |
 
-### D — Produto, QA, pesquisa e pitch
+### D — Produto, QA, pesquisa e pitch (Pessoa 1)
 
 | ID | P | h | Dep. | Tarefa / aceite |
 |---|---|---:|---|---|
@@ -295,13 +295,13 @@ IDs para futuras issues; P=prioridade, h=horas-pessoa estimadas, dependências m
 | PD14 | 0 | 2 | PD13 | Formulário, links, aceite |
 | PD15 | 0 | 3 | G5,PD12 | Banca simulada |
 
-P0: A 40h + B 43h + C 38h + D 42h = 163 horas-pessoa. Capacidade com quatro pessoas × 8h produtivas × seis dias = 192h; margem 29h para integração, imprevistos e P1 selecionado. Estimativa, não garantia. P1 completo não cabe automaticamente. Se capacidade menor, cortar escopo; redistribuir conforme habilidades e carga, D auxilia fixtures/QA, C auxilia integração FE. Não sacrificar descanso, segurança ou honestidade.
+P0: A 40h + B 43h + C 38h + D 42h = 163 horas-pessoa. Pessoa 1 (A+D): 82h P0, 95h no backlog original; Pessoa 2 (B+C): 81h P0, 91h no backlog original. Capacidade de referência com duas pessoas × 8h produtivas × seis dias = 96h; déficit de 67h frente ao P0 (34h para Pessoa 1 e 33h para Pessoa 2). Estimativa, não garantia. A mudança de responsáveis não reduz o esforço nem altera o escopo, tarefas, prioridades ou datas. A capacidade é insuficiente sob essa premissa; confirmar disponibilidade e esforço restante. D auxilia fixtures/QA, C auxilia integração FE. Não sacrificar descanso, segurança ou honestidade.
 
 Ritmo: sync curto 9h, integrar ao meio e fim do dia, PRs pequenos e revisão cruzada, main executável, comunicar bloqueio após 60–90 min, acompanhar tarefas aceitas e evidências (não linhas de código). Issues com ID, prioridade, dono, dependências, gate, aceite, estimativa e evidência. Milestones G1–G7.
 
 ## 7. Cronograma e caminho crítico
 
-| Data | IA | Frontend | Backend | Produto | Gate |
+| Data | IA (Pessoa 1) | Frontend (Pessoa 2) | Backend (Pessoa 2) | Produto (Pessoa 1) | Gate |
 |---|---|---|---|---|---|
 | 24/11 | CV01–06 iniciados, pose e fixtures | FE01–05 | BE01–04, BE13 inicial | PD01–03, PD06, PD08 | G1 |
 | 25/11 | CV07–10, medida inicial | FE06–09 | BE05–08 iniciados | PD04–05 e teste | G2 |
@@ -659,9 +659,9 @@ Exemplos ilustrativos: 30→36 cm representa +6 cm e +20%, somente contado se su
 
 ## 17. Especificação integral de backlog e execução por frente
 
-As tabelas da seção 6 são a lista canônica de tarefas (63). Esta seção explicita o produto de cada tarefa e o teste de conclusão; dependências e horas continuam na tabela canônica.
+As tabelas da seção 6 são a lista canônica de tarefas (63). Esta seção explicita o produto de cada tarefa e o teste de conclusão; dependências e horas continuam na tabela canônica. As quatro frentes são acumuladas por dois integrantes: Pessoa 1 (A+D) e Pessoa 2 (B+C).
 
-### 17.1. IA — 16 tarefas
+### 17.1. IA — 16 tarefas (Pessoa 1)
 
 | ID | Produto concreto | Evidência mínima de aceite |
 |---|---|---|
@@ -682,7 +682,7 @@ As tabelas da seção 6 são a lista canônica de tarefas (63). Esta seção exp
 | CV15 | comparação RF-DETR/MediaPipe offline | mesma referência, métricas comparáveis e custo de execução |
 | CV16 | replay de bola no Lab, opcional | origem, confiança e estimados sinalizados; sem claim de prova esportiva |
 
-### 17.2. Frontend — 17 tarefas
+### 17.2. Frontend — 17 tarefas (Pessoa 2)
 
 | ID | Produto concreto | Evidência mínima de aceite |
 |---|---|---|
@@ -704,7 +704,7 @@ As tabelas da seção 6 são a lista canônica de tarefas (63). Esta seção exp
 | FE16 | acessibilidade/mobile | teclado, leitor de tela, toque e orientação |
 | FE17 | refinamento e mensagens | falhas do teste de uso tratadas, regressão do fluxo |
 
-### 17.3. Backend — 15 tarefas
+### 17.3. Backend — 15 tarefas (Pessoa 2)
 
 | ID | Produto concreto | Evidência mínima de aceite |
 |---|---|---|
@@ -724,7 +724,7 @@ As tabelas da seção 6 são a lista canônica de tarefas (63). Esta seção exp
 | BE14 | ranking evolução/participação | baseline, incerteza e denominador testados |
 | BE15 | segurança/monitoramento | regressões, logs mínimos e nenhuma chave exposta |
 
-### 17.4. Produto/QA — 15 tarefas
+### 17.4. Produto/QA — 15 tarefas (Pessoa 1)
 
 | ID | Produto concreto | Evidência mínima de aceite |
 |---|---|---|
@@ -754,7 +754,15 @@ As tabelas da seção 6 são a lista canônica de tarefas (63). Esta seção exp
 | D | 14 / 1 / 0 | 42 / 3 / 0 | 45h |
 | Total | 56 / 6 / 1 | 163 / 19 / 4 | 186h |
 
-A análise aritmética das 63 tarefas confirma os totais. A margem nominal de 29h não significa que todos os extras cabem: P1 e P2 somam 23h somente para os itens já estimados, deixando 6h se todos forem executados. Além disso, parte do escopo opcional não tinha tarefa própria. Não comprometer integração, repouso e correções com essa soma.
+A análise aritmética das 63 tarefas confirma os totais. A distribuição entre os dois integrantes fica equilibrada em esforço P0, sem mudar tarefas, datas ou prioridades:
+
+| Integrante | Frentes | Tarefas P0 / P1 / P2 | Horas P0 / P1 / P2 | Total original | Capacidade de referência |
+|---|---|---|---|---:|---:|
+| Pessoa 1 | A + D | 27 / 3 / 1 | 82 / 9 / 4 | 95h | 48h |
+| Pessoa 2 | B + C | 29 / 3 / 0 | 81 / 10 / 0 | 91h | 48h |
+| Total | A–D | 56 / 6 / 1 | 163 / 19 / 4 | 186h | 96h |
+
+P1 e P2 somam 23h somente para os itens originalmente estimados. A capacidade nominal de 96h é inferior às 163h P0 por 67h, antes dos itens opcionais e da integração. Não comprometer integração, repouso e correções com essa soma.
 
 Para não deixar funcionalidades sem rastreio, as seguintes extensões são propostas separadas do backlog original de 63; ativar apenas após G3/G4 e reavaliar horas. Não contam na estimativa P0.
 
@@ -766,7 +774,7 @@ Para não deixar funcionalidades sem rastreio, as seguintes extensões são prop
 | EX04 | F22 salto com passada/alcance | 2 | 8 | CV13, G4 | novo protocolo, benchmark independente |
 | EX05 | F15/F16 interface das abas adicionais | 1 | 3 | BE14, FE11 | abas de evolução e participação com regras claras |
 
-Total opcional adicional estimado: 25h. Estes itens são novos desdobramentos do escopo que já existia; não são compromisso de entrega. Usar estimativas como hipóteses. Com 192h de capacidade e 163h de P0, selecionar P1/P2 por valor por hora e risco. Se a equipe tiver apenas 6 horas produtivas por pessoa por dia, 144h totais implicam déficit de 19h frente ao P0 estimado: reduzir complexidade ou redistribuir trabalho antes de iniciar extras.
+Total opcional adicional estimado: 25h. Estes itens são novos desdobramentos do escopo que já existia; não são compromisso de entrega. Usar estimativas como hipóteses. Pessoa 1 assume EX03 e EX04 (IA e protocolos); Pessoa 2 assume EX01, EX02 e EX05 (interface e backend), mantendo as dependências originais. Incluindo as extensões, os esforços totais são 109h para Pessoa 1 e 102h para Pessoa 2. Com 96h de capacidade e 163h de P0, há déficit de 67h; se a equipe tiver apenas 6 horas produtivas por pessoa por dia, 72h totais implicam déficit de 91h frente ao P0 estimado. Nenhuma tarefa, prioridade ou data foi alterada nesta revisão; a diferença de capacidade deve ser tratada como risco.
 
 ### 17.6. Matriz de rastreabilidade de funcionalidades
 
@@ -791,6 +799,8 @@ Total opcional adicional estimado: 25h. Estes itens são novos desdobramentos do
 | F23–25 | roadmap | Pós-hackathon |
 
 ## 18. Plano diário detalhado, integração e decisões de corte
+
+A, B, C e D são frentes, não pessoas distintas. Pessoa 1 executa as atividades A e D de cada dia; Pessoa 2 executa as atividades B e C de cada dia. As datas, horários, atividades e gates abaixo permanecem os mesmos. Referências a todos indicam os dois integrantes; a liderança e o representante serão confirmados nominalmente.
 
 ### 18.1. Dia 24 — fundação
 
