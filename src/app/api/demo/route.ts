@@ -8,7 +8,7 @@ function json(data:unknown,status=200,cookie?:string){
   return Response.json(data,{status,headers:{"Cache-Control":"no-store",...(cookie?{"Set-Cookie":cookie}:{})}});
 }
 function sameOrigin(req:Request){const o=req.headers.get("origin");return o===new URL(req.url).origin;}
-function fail(err:unknown){return json({error:err instanceof Error&&err.message==="IDEMPOTENCY_CONFLICT"?"IDEMPOTENCY_CONFLICT":"SERVICE_UNAVAILABLE"},err instanceof Error&&err.message==="IDEMPOTENCY_CONFLICT"?409:503)}
+function fail(err:unknown){const code=err instanceof Error?err.message:"";if(code==="IDEMPOTENCY_CONFLICT")return json({error:code},409);if(code==="SESSION_LIMIT"||code==="ATTEMPT_LIMIT")return Response.json({error:code},{status:429,headers:{"Cache-Control":"no-store","Retry-After":"60"}});if(code==="SESSION_EXPIRED")return json({error:code},409);return json({error:"SERVICE_UNAVAILABLE"},503)}
 export async function GET(req:Request){
   try{
     if(mode()==="local")return json({persistence:"local",attempts:[]});

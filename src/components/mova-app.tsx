@@ -45,11 +45,11 @@ export default function MovaApp({view,initialSport="volleyball",privateCapture=f
   const controller=new AbortController();const t=setTimeout(()=>controller.abort(),12000);
   try{
     const r=await fetch("/api/demo",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(req),signal:controller.signal});
-    if(!r.ok)throw Error("API");const data=await r.json() as {persistence:"local"|"supabase";attempt:DemoAttempt};
+    if(r.status===429)throw Error("LIMIT");if(!r.ok)throw Error("API");const data=await r.json() as {persistence:"local"|"supabase";attempt:DemoAttempt};
     const next=[data.attempt,...attempts.filter(a=>a.id!==data.attempt.id)].slice(0,100);
     if(data.persistence==="local")sessionStorage.setItem(CACHE,JSON.stringify(next));
     sessionStorage.setItem(ACTIVE,data.attempt.id);setAttempts(next);setSelected(data.attempt);setPersistence(data.persistence);retry.current=null;setProgress(1);router.push("/results")
-  }catch{setError("Não conseguimos processar esta tentativa. Tente de novo; a chave de envio será mantida.")}
+  }catch(e){setError(e instanceof Error&&e.message==="LIMIT"?"Limite da demonstração atingido. Aguarde um minuto ou reinicie a sessão após atingir 100 tentativas.":"Não conseguimos processar esta tentativa. Tente de novo; a chave de envio será mantida.")}
   finally{clearTimeout(t);inFlight.current=false;setBusy(false)}
  }
  async function clear(){
