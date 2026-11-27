@@ -4,8 +4,8 @@ Plano mestre v2.1 inalterado. Base branch Pessoa 2; PR separado para revisão cr
 |---|---|---|
 |CV01|auditoria READMEs/árvores/commits e inventário|licenças/datasets e testes Python não executados|
 |CV02|contrato documentado e integrado|aprovação cruzada|
-|CV03|adaptador MediaPipe e experimento em pixels no Lab|executar modelo em navegador/aparelho real|
-|CV04|gerador matemático, casos inválidos, render de personagem|vídeo sintético decodificado e inferência end-to-end|
+|CV03|adaptador MediaPipe e experimento em vídeo sintético codificado no Lab|executar modelo em navegador/aparelho real|
+|CV04|gerador matemático, casos inválidos, vídeo de personagem gerado localmente|homologar detecção e métrica de vídeo end-to-end|
 |CV05|timestamps do vídeo, gaps e FPS real|teste em câmera|
 |CV06|mediana de observações e rejeição de estimados|calibração em dados reais|
 |CV07|detecção de voo e eventos|validar contatos reais|
@@ -28,3 +28,5 @@ Plano mestre v2.1 inalterado. Base branch Pessoa 2; PR separado para revisão cr
 |PD11|documentação de protocolo, testes, fontes|README final e lockfile|
 |PD12|roteiro e matriz de claims|ensaio e revisão após integração|
 CV15/16, PD07 são opcionais, não exigidos até G4. PD13–15 são posteriores. G4 não homologado empiricamente. Nenhuma entrevista, voluntário, resposta ou precisão humana inventada. 
+
+Auditoria Git: 17 commits de pose, 5 de bola e 14 da branch integrada até 8d4242b; todos os author dates consultados depois da abertura. Branches de pesquisa têm CSVs e figuras vendorizados de TrackNetV3; nenhum MP4/peso listado nas árvores atuais, mas direitos e histórico de assets ainda precisam de revisão. Nenhum motor Python foi mesclado. O teste real de modelo tem workflow separado; falha se CDN/modelo não carregar ou se o personagem não for detectado.

@@ -70,7 +70,7 @@ export function evaluateJump(frames,sport,options={}){
  complementary=100*((at(takeoff)+at(landing))/2-at(fit.apexMs))/options.normalizedUnitsPerMeter;
  if(Math.abs(complementary-nominal)>Math.max(5,nominal*.25))flags.push("ESTIMATORS_DIVERGE");
  }else flags.push("NO_INDEPENDENT_SPATIAL_SCALE");
- if(!synthetic)flags.push("UNVALIDATED_REAL_CAPTURE","CAMERA_MOTION_NOT_INDEPENDENTLY_VERIFIED");
+ if(!synthetic)flags.push(options.source==="synthetic_video"?"UNVALIDATED_SYNTHETIC_VIDEO":"UNVALIDATED_REAL_CAPTURE","CAMERA_MOTION_NOT_INDEPENDENTLY_VERIFIED");
  flags.push("NO_EMPIRICAL_CALIBRATION");
  result.value=round(nominal);events.push({name:"takeoff",timestampMs:takeoff},{name:"apex",timestampMs:apex.t},{name:"landing",timestampMs:landing});
  result.diagnostics={flightDurationMs:round(duration,2),timingBracketCm:[round(lower,2),round(nominal,2)],parabolaHeightCm:complementary===null?null:round(complementary,2),fitR2:fit?round(fit.r2,4):null,fitRmseNormalized:fit?round(fit.rmse,5):null,contactMethod:"outer-sampled-contact-bracket",sampleCount:frames.length};

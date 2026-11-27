@@ -31,5 +31,5 @@ Next.js, React e MediaPipe são projetos externos. Código novo de aplicação e
 
 ## Motor e validação (Pessoa 1)
 - [Protocolo 1.1-draft](docs/protocols/standing-jump.md), [benchmark sintético](docs/validation/synthetic-benchmark.md), [kit pesquisa](docs/validation/research-kit.md), [claims/pitch](docs/validation/claims-and-pitch.md), [inventário](THIRD_PARTY_NOTICES.md).
-- Reproduzir: `node benchmarks/synthetic-jump.mjs`. O Lab permite experimento separado de inferência em pixels de personagem desenhado, sem score/ranking. Não equivale a vídeo decodificado homologado. Captura real local experimental, incerteza não calibrada.
+- Reproduzir: `node benchmarks/synthetic-jump.mjs`. O Lab permite experimento separado com vídeo sintético codificado/decodificado localmente e inferência real de pixels, sem score/ranking. A homologação de detecção positiva e do pipeline completo ainda depende do teste real do modelo. Captura real local experimental, incerteza não calibrada.
 - [Tarefas da Pessoa 1](docs/decisions/pessoa-1-24-27.md).
