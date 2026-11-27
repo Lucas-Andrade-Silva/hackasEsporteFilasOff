@@ -1,8 +1,4 @@
 # Supabase MOVA
-O arquivo schema-draft.sql é SQL de desenvolvimento, não migration homologada. Nenhum banco remoto foi alterado. O conector mostrou apenas projetos de outros produtos; não os utilizar.
-1. Criar/selecionar um projeto dedicado MOVA sem gasto não autorizado.
-2. Inicializar a CLI local conforme versão instalada (supabase init --help). Verificar schema numa instância local; gerar migration com supabase migration new e registrar a versão depois dos testes.
-3. Testar grants/RLS usando anon, authenticated e server role; executar teste de duas sessões, concorrência, TTL e exclusão.
-4. Aplicar migration no ambiente de desenvolvimento autorizado; definir SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY exclusivamente server-side.
-5. Configurar limpeza de sessões expiradas; adicionar limite de tentativas/rate limiting antes de expor publicamente.
-O SQL atual cobre somente demo_sessions/demo_attempts. Profiles, grupos, protocolos, challenges, tentativas reais, traces e verificação/autenticação adulta ainda não implementados. Não armazenar vídeo bruto. O serviço de demo utiliza token aleatório HttpOnly, hash em banco, expiração e escopo por sessão.
+Projeto dedicado criado em São Paulo: nxsnyfvqhbiofsivnnuc. Em 27/11/2026 foram aplicadas as migrations mova_demo_schema (20261127013410) e mova_demo_hardening (20261127132204), correspondentes a schema-draft.sql e demo-hardening.sql. Em banco novo, aplicar nessa ordem; não reaplicar o primeiro SQL sobre banco existente. CI testa ambos em PostgreSQL descartável. Ver docs/decisions/revisao-integracao-27-11.md.
+As tabelas de demonstração usam RLS sem políticas públicas, RPCs invoker com execute restrito ao service_role, idempotência e quotas. A limpeza de expirados ocorre na criação de sessões, não em cron; proteção de borda e rotina periódica ainda necessárias. Testes SQL remotos passaram com rollback. Integração HTTP remota não homologada.
+Configurar SUPABASE_URL=https://nxsnyfvqhbiofsivnnuc.supabase.co e SUPABASE_SERVICE_ROLE_KEY exclusivamente server-side, diretamente nos segredos do Vercel Preview após confirmar o repositório correto. Não inserir chaves em código, chat ou Git. A demo local funciona sem credenciais. O schema não implementa perfis/grupos/tentativas reais/autenticação adulta; captura real permanece experimental e privada, sem persistência.
