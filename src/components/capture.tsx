@@ -4,7 +4,7 @@ import Link from "next/link";
 import type {PoseLandmarker} from "@mediapipe/tasks-vision";
 import {evaluateJump} from "@/engine/protocols/jump.mjs";
 import type {Measurement,Sport,PoseFrame} from "@/contracts/attempt";
-const names:Record<number,string>={0:"nose",11:"left_shoulder",12:"right_shoulder",13:"left_elbow",14:"right_elbow",15:"left_wrist",16:"right_wrist",23:"left_hip",24:"right_hip",25:"left_knee",26:"right_knee",27:"left_ankle",28:"right_ankle",29:"left_heel",30:"right_heel",31:"left_foot_index",32:"right_foot_index"};
+import {adaptPose,createPoseModel} from "@/engine/pose/mediapipe-adapter";
 const edges=[[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[27,29],[29,31],[24,26],[26,28],[28,30],[30,32]];
 export default function Capture({sport}:{sport:Sport}){
  const video=useRef<HTMLVideoElement>(null),canvas=useRef<HTMLCanvasElement>(null);
@@ -23,9 +23,7 @@ export default function Capture({sport}:{sport:Sport}){
     stream.current=acquired;
     if(!video.current)throw Error("Câmera indisponível.");
     video.current.srcObject=acquired;await video.current.play();
-    const {FilesetResolver,PoseLandmarker}=await import("@mediapipe/tasks-vision");
-    const resolver=await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm");
-    pose=await PoseLandmarker.createFromOptions(resolver,{baseOptions:{modelAssetPath:"https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",delegate:"CPU"},runningMode:"VIDEO",numPoses:2,minPoseDetectionConfidence:0.5,minPosePresenceConfidence:0.5});
+    pose=await createPoseModel();
     if(g!==generation.current){pose.close();return}
     model.current=pose;setPhase("ready");let last=-1;
     const loop=()=>{
@@ -43,7 +41,7 @@ export default function Capture({sport}:{sport:Sport}){
           const result=p.detectForVideo(v,now);const detected=result.landmarks.length;setSeen(detected);
           c.width=v.videoWidth;c.height=v.videoHeight;const ctx=c.getContext("2d");
           if(ctx&&detected===1){const pts=result.landmarks[0];ctx.strokeStyle="#c6f432";ctx.fillStyle="#c6f432";ctx.lineWidth=3;for(const [i,j] of edges){const a=pts[i],b=pts[j];if((a.visibility??0)<0.5||(b.visibility??0)<0.5)continue;ctx.beginPath();ctx.moveTo(a.x*c.width,a.y*c.height);ctx.lineTo(b.x*c.width,b.y*c.height);ctx.stroke()}for(const pt of pts){if((pt.visibility??0)<0.5)continue;ctx.beginPath();ctx.arc(pt.x*c.width,pt.y*c.height,3,0,Math.PI*2);ctx.fill()}}
-          if(recording.current){const landmarks:PoseFrame["landmarks"]={};if(detected===1)for(const [i,name] of Object.entries(names)){const pt=result.landmarks[0][Number(i)];if(pt)landmarks[name]={x:pt.x,y:pt.y,confidence:pt.visibility??0,estimated:false}}frames.current.push({timestampMs:v.currentTime*1000,width:v.videoWidth,height:v.videoHeight,athleteCount:detected,landmarks})}
+          if(recording.current)frames.current.push(adaptPose(result.landmarks,v.currentTime*1000,v.videoWidth,v.videoHeight));
         }catch{stop();frames.current=[];setPhase("idle");setMessage("A inferência falhou. Tente novamente ou use a demo.");return}
       }
       raf.current=requestAnimationFrame(loop)
