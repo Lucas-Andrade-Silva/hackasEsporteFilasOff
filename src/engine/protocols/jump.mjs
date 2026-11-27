@@ -17,6 +17,11 @@ export function fitQuadratic(points){
  return {a,b,c,t0,rmse:Math.sqrt(ss/rows.length),r2:total>1e-12?1-ss/total:0,apexMs:t0-1000*b/(2*a)};
 }
 
+// Median of three observed points for apex selection only. Raw contact evidence and fit are unchanged.
+export function smoothObservedHip(points){
+ return points.map((p,i)=>{const prev=points[i-1],next=points[i+1];return prev&&next&&p.t-prev.t<80&&next.t-p.t<80?{...p,hip:median([prev.hip,p.hip,next.hip])}:{...p}});
+}
+
 export function evaluateJump(frames,sport,options={}){
  const synthetic=options.source==="synthetic_pose_replay";
  const flags=[],events=[];
@@ -48,8 +53,8 @@ export function evaluateJump(frames,sport,options={}){
  const takeoff=data[first-1].t,landing=data[last+1].t,duration=landing-takeoff;
  if(duration<180||duration>1000)return reject("FLIGHT_DURATION_OUT_OF_PROTOCOL");
  const airborne=data.slice(first,last+1);
- const apex=airborne.reduce((a,p)=>p.hip<a.hip?p:a);
- if(apex===airborne[0]||apex===airborne.at(-1))flags.push("APEX_UNCERTAIN");
+ const smooth=smoothObservedHip(airborne),apex=smooth.reduce((a,p)=>p.hip<a.hip?p:a);
+ if(apex.t===airborne[0].t||apex.t===airborne.at(-1).t)flags.push("APEX_UNCERTAIN");
  const fit=fitQuadratic(airborne.map(p=>({t:p.t,y:p.hip})));
  const nominal=flightHeightCm(duration);
  const innerDuration=data[last].t-data[first].t;
