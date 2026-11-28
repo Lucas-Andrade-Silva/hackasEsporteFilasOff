@@ -20,8 +20,13 @@ from core.video_processor import timestamp_of
 
 
 def interpolate_short_gaps(detections: list[Detection],
-                           max_gap: int = MAX_LINEAR_GAP) -> list[Detection]:
-    """Preenche gaps curtos entre duas detecções com interpolação linear."""
+                           max_gap: int = MAX_LINEAR_GAP,
+                           breaks: tuple = ()) -> list[Detection]:
+    """Preenche gaps curtos entre duas detecções com interpolação linear.
+
+    `breaks`: índices onde começa uma nova tomada (corte de cena); um gap
+    que atravessa um corte nunca é interpolado.
+    """
     det = list(detections)
     n = len(det)
     i = 0
@@ -33,7 +38,9 @@ def interpolate_short_gaps(detections: list[Detection],
         while j < n and not det[j].visibility:
             j += 1
         gap = j - i
-        if 0 < i and j < n and gap <= max_gap and det[i - 1].detected and det[j].detected:
+        crosses_cut = any(i - 1 < b <= j for b in breaks)
+        if (0 < i and j < n and gap <= max_gap and not crosses_cut
+                and det[i - 1].detected and det[j].detected):
             x0, y0 = det[i - 1].x, det[i - 1].y
             x1, y1 = det[j].x, det[j].y
             for k in range(gap):
@@ -92,10 +99,11 @@ def build_result(
     height: int,
     frame_count: int,
     interpolate_gaps: bool = True,
+    breaks: tuple = (),
 ) -> TrackingResult:
     """Converte detecções em TrackingResult com timestamps reais."""
     if interpolate_gaps:
-        detections = interpolate_short_gaps(detections)
+        detections = interpolate_short_gaps(detections, breaks=breaks)
     records = []
     for k, d in enumerate(detections):
         frame_idx = start_frame + k
@@ -108,7 +116,7 @@ def build_result(
         video_path=str(video_path), sport=sport, fps=fps,
         width=width, height=height, frame_count=frame_count,
         processed_start=start_frame, records=records,
-        meta={"detector": "hybrid(tracknet_v3+fallback)"},
+        meta={"detector": "hybrid(modelo de bola + fallback)"},
     )
 
 

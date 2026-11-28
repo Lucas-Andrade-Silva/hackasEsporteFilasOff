@@ -22,13 +22,17 @@ def main():
                  choices=["volleyball", "basketball"])
     p.add_argument("--start", type=float, default=0.0, help="segundo inicial")
     p.add_argument("--end", type=float, default=None, help="segundo final")
-    p.add_argument("--no-tracknet", action="store_true")
+    p.add_argument("--ball-model", choices=["vballnet", "tracknet", "none"],
+                   default=None, help="modelo de bola (padrão: vballnet se disponível)")
+    p.add_argument("--no-tracknet", action="store_true",
+                   help="atalho antigo para --ball-model none")
     p.add_argument("--no-yolo", action="store_true")
     p.add_argument("--no-color", action="store_true")
     args = p.parse_args()
 
     from core.video_processor import probe
     from core.hybrid_detector import HybridBallDetector
+    ball_model = "none" if args.no_tracknet else args.ball_model
 
     info = probe(args.video)
     start_frame = int(args.start * info.fps)
@@ -36,7 +40,7 @@ def main():
 
     detector = HybridBallDetector(
         sport=args.sport,
-        use_tracknet=not args.no_tracknet,
+        ball_model=ball_model,
         use_yolo=not args.no_yolo,
         use_color=not args.no_color)
 
