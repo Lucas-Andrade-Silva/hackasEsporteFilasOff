@@ -107,7 +107,7 @@ export default function Onboarding() {
           <label className="check">
             <input type="checkbox" checked={!!answers.adult_confirmed}
               onChange={e => { const next = { ...answers, adult_confirmed: e.target.checked }; setAnswers(next); saveAnswers(next); }} />
-            <span>Confirmo que tenho 18 anos ou mais. O MOVA é só para adultos nesta versão.</span>
+            <span>Confirmo que tenho 18 anos ou mais. O Atleta10 é só para adultos nesta versão.</span>
           </label>
           <p className="t-foot muted" style={{ marginTop: 14 }}>
             Todo mundo começa do zero: seus exercícios ficam zerados até você fazer cada um pela primeira vez.

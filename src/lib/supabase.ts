@@ -29,7 +29,7 @@ const ERRORS: Record<string, string> = {
   "Invalid login credentials": "Email ou senha incorretos.",
   "Email not confirmed": "Confirme seu email antes de entrar. O link chegou na sua caixa de entrada.",
   "User already registered": "Já existe uma conta com esse email. Entre com sua senha.",
-  ADULT_CONFIRMATION_REQUIRED: "O MOVA é só para maiores de 18 anos.",
+  ADULT_CONFIRMATION_REQUIRED: "O Atleta10 é só para maiores de 18 anos.",
   GROUP_NOT_FOUND: "Nenhum grupo com esse código.",
   GROUP_FULL: "Esse grupo já tem 50 pessoas.",
   GROUP_LIMIT: "Você já criou 10 grupos.",

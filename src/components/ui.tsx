@@ -82,10 +82,18 @@ export function Segmented<T extends string>({ value, options, onChange, label, d
   );
 }
 
+/** Logo atleta10. `light` usa o "atleta" em branco, para fundos escuros. */
+export function Wordmark({ light = false, height = 26 }: { light?: boolean; height?: number }) {
+  return (
+    <img className="wordmark" src={light ? "/brand/wordmark-white.png" : "/brand/wordmark.png"}
+      alt="Atleta10" height={height} style={{ height, width: "auto" }} />
+  );
+}
+
 export function Splash() {
   return (
     <div className="splash" aria-busy="true" aria-label="Carregando">
-      <span className="wordmark">MOVA</span>
+      <img className="splash-icon" src="/brand/icon-192.png" alt="Atleta10" width={88} height={88} />
     </div>
   );
 }

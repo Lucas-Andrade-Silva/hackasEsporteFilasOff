@@ -2,7 +2,8 @@
 import Link from "next/link";
 import { CheckCircle, XCircle, CoinVertical } from "@phosphor-icons/react";
 import Gate from "@/components/gate";
-import MotionFigure from "@/components/motion-figure";
+import { ClipFrame } from "@/components/exercise-media";
+import { clipFor } from "@/lib/clips";
 import { AppShell, Coins } from "@/components/ui";
 import { SPORT_LABEL, findExercise } from "@/lib/catalog";
 import { practiceDays, useAuth, type Profile } from "@/lib/auth";
@@ -27,7 +28,7 @@ function Evolution({ profile }: { profile: Profile }) {
 
       {!activities.length ? (
         <section className="empty">
-          <div className="empty-art"><MotionFigure motion="sprint" label="Atleta correndo" /></div>
+          <div className="empty-art"><ClipFrame clip={clipFor("b-drible-alternado")} alt="Atleta driblando" /></div>
           <h2>Sua história começa no primeiro treino</h2>
           <p>Cada exercício que você fizer aparece aqui, com a pontuação, se passou e as moedas que ganhou.</p>
           <Link href="/" className="btn btn-primary">Ver treinos</Link>
@@ -39,7 +40,7 @@ function Evolution({ profile }: { profile: Profile }) {
             const date = new Date(a.created_at);
             return (
               <Link key={a.id} href={`/exercicio/${a.exercise_id}`} className="activity">
-                <span className="activity-thumb">{e && <MotionFigure motion={e.motion} playing={false} label={e.title} />}</span>
+                <span className="activity-thumb">{e && <ClipFrame clip={clipFor(e.id)} />}</span>
                 <span>
                   <span className="t-headline" style={{ display: "block" }}>{e?.title ?? a.exercise_id}</span>
                   <span className="t-foot muted">

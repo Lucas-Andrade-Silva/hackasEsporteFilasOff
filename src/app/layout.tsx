@@ -8,11 +8,11 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "MOVA | Salta. Evolui. Aparece.",
+  title: "Atleta10 | Salta. Evolui. Aparece.",
   description: "Treinos de vôlei e basquete medidos pela câmera do celular. Evolua, ganhe moedas e suba no ranking.",
   manifest: "/manifest.webmanifest",
-  icons: { icon: "/icon.svg", apple: "/icon.svg" },
-  appleWebApp: { capable: true, title: "MOVA", statusBarStyle: "default" },
+  icons: { icon: [{ url: "/brand/favicon-48.png", sizes: "48x48", type: "image/png" }, { url: "/brand/icon-192.png", sizes: "192x192", type: "image/png" }], apple: "/brand/apple-touch-icon.png" },
+  appleWebApp: { capable: true, title: "Atleta10", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {

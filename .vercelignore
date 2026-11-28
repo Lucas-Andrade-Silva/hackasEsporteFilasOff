@@ -1,0 +1,16 @@
+# Só o app web vai para a Vercel.
+.env*
+!.env.example
+.claude
+.pytest_cache
+.next
+node_modules
+ball_engine
+pose_engine
+*.pt
+tests
+benchmarks
+fixtures
+playwright-report
+test-results
+tsconfig.tsbuildinfo

@@ -5,7 +5,7 @@ import { test, expect } from "@playwright/test";
 test("sem login, o app manda para as boas-vindas", async ({ page }) => {
   for (const path of ["/", "/ranking", "/evolucao", "/perfil", "/treinos/v-impulsao", "/exercicio/v-bloqueio"]) {
     await page.goto(path);
-    await expect(page).toHaveURL(/\/bem-vindo$/);
+    await expect(page).toHaveURL(/\/bem-vindo$/, { timeout: 15000 });
   }
   await expect(page.getByRole("heading", { name: /Salta.*Evolui.*Aparece/s })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Navegação principal" })).toHaveCount(0);

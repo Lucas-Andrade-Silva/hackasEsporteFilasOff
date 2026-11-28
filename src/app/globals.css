@@ -1,4 +1,4 @@
-/* MOVA v2: base branca, limão e lilás nos detalhes, escuro dentro do exercício.
+/* Atleta10: base branca, limão e lilás nos detalhes, escuro dentro do exercício.
    Tipografia: SF Pro no iPhone (fonte do sistema), Inter nos demais.
    Escala de texto da Apple (Human Interface Guidelines). */
 :root {
@@ -53,8 +53,7 @@ h1, h2, h3, p { margin: 0; }
 /* Estrutura */
 .shell { max-width: 520px; margin: 0 auto; min-height: 100dvh; padding: calc(12px + env(safe-area-inset-top)) 20px calc(104px + env(safe-area-inset-bottom)); }
 .topbar { display: flex; align-items: center; justify-content: space-between; min-height: 44px; margin-bottom: 8px; gap: 12px; }
-.wordmark { font-family: var(--font-display); font-weight: 900; font-size: 22px; letter-spacing: -1.2px; font-style: italic; }
-.wordmark::after { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--lime); margin-left: 3px; box-shadow: 0 0 0 2px var(--ink); vertical-align: 2px; }
+.wordmark { display: block; }
 .section-title { display: flex; align-items: baseline; justify-content: space-between; margin: 32px 0 12px; }
 .section-title h2 { font-family: var(--font-display); font-size: 22px; line-height: 28px; font-weight: 800; letter-spacing: -0.35px; }
 .icon-btn { width: 44px; height: 44px; display: inline-grid; place-items: center; border-radius: 50%; }
@@ -101,16 +100,19 @@ h1, h2, h3, p { margin: 0; }
 .error-text { color: var(--danger); font-size: 15px; margin-top: 10px; }
 
 .splash { min-height: 100dvh; display: grid; place-items: center; }
-.splash .wordmark { font-size: 40px; animation: pulse 1.2s ease-in-out infinite; }
+.splash-icon { border-radius: 22px; animation: pulse 1.2s ease-in-out infinite; }
 @keyframes pulse { 50% { opacity: .35; } }
 
 /* Figura animada */
-.motion { display: block; width: 100%; height: 100%; }
+.media-fill { display: block; width: 100%; height: 100%; object-fit: cover; background: #18171d; }
+.credit { display: inline-block; margin-top: 8px; font-size: 12px; color: var(--muted); text-decoration: underline; text-underline-offset: 2px; }
+.credit-dark { color: #8e8e93; }
 
 /* ---------- Boas-vindas e onboarding ---------- */
 .welcome { min-height: 100dvh; display: flex; flex-direction: column; background: var(--dark); color: var(--white); overflow: hidden; }
 .welcome-art { position: relative; flex: 1; min-height: 46vh; }
-.welcome-art .motion { position: absolute; inset: 0; }
+.welcome-art .media-fill { position: absolute; inset: 0; }
+.welcome-art::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(11,11,15,.1) 40%, var(--dark)); }
 .welcome-body { padding: 0 24px calc(28px + env(safe-area-inset-bottom)); max-width: 520px; width: 100%; margin: 0 auto; }
 .welcome-title { font-family: var(--font-display); font-weight: 900; font-size: 52px; line-height: 48px; letter-spacing: -2.4px; margin: 0 0 14px; }
 .welcome-title em { font-style: normal; color: var(--lime); display: block; }
@@ -145,7 +147,7 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
 .home-hello { margin: 8px 0 4px; }
 .home-hello .t-large span { color: var(--lilac); }
 .mission { position: relative; display: block; margin-top: 18px; border-radius: 28px; overflow: hidden; background: var(--dark); color: var(--white); min-height: 236px; isolation: isolate; }
-.mission .motion { position: absolute; inset: 0 0 0 30%; width: 70%; z-index: -2; }
+.mission .media-fill { position: absolute; inset: 0; z-index: -2; }
 .mission::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, var(--dark) 34%, rgba(11,11,15,.2) 70%, transparent); }
 .mission-body { padding: 22px; max-width: 64%; display: flex; flex-direction: column; min-height: 236px; }
 .mission-tag { display: inline-flex; align-self: flex-start; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; background: var(--lime); color: var(--ink); font-size: 12px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; }
@@ -156,7 +158,7 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
 
 .groups { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .group-card { position: relative; display: flex; flex-direction: column; justify-content: flex-end; min-height: 188px; border-radius: 22px; overflow: hidden; background: var(--dark); color: var(--white); isolation: isolate; padding: 14px; }
-.group-card .motion { position: absolute; inset: 0; z-index: -2; }
+.group-card .media-fill { position: absolute; inset: 0; z-index: -2; }
 .group-card::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, transparent 38%, rgba(11,11,15,.92)); }
 .group-card:nth-child(4n+1) { grid-row: span 1; }
 .group-card:first-child { grid-column: span 2; min-height: 168px; }
@@ -186,7 +188,7 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
 .ex-tags .tag-coins { background: rgba(207,245,0,.14); color: var(--lime); }
 
 .ex-hero { position: relative; height: 340px; margin: 0 -20px; isolation: isolate; }
-.ex-hero .motion { position: absolute; inset: 0; z-index: -2; }
+.ex-hero .media-fill { position: absolute; inset: 0; z-index: -2; }
 .ex-hero::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(11,11,15,.15) 0%, transparent 35%, rgba(11,11,15,.6) 70%, var(--dark) 100%); }
 .ex-hero-top { position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; padding: calc(8px + env(safe-area-inset-top)) 20px; }
 .ex-hero-text { position: absolute; left: 20px; right: 20px; bottom: 8px; }
@@ -298,3 +300,17 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
   .groups { grid-template-columns: 1fr 1fr 1fr; }
   .group-card:first-child { grid-column: span 3; }
 }
+
+/* Player do YouTube (corte em loop) */
+.yt { position: absolute; inset: 0; background: #000; overflow: hidden; }
+.yt-poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.yt-host, .yt-host iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.yt-host iframe { pointer-events: none; transform: scale(1.22); transform-origin: center; }
+.mission .yt { z-index: -2; }
+.ex-hero .yt, .group-card .yt { z-index: -2; }
+.battle-face img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.welcome-logo { position: absolute; top: calc(18px + env(safe-area-inset-top)); left: 24px; z-index: 2; }
+.mission .yt-host iframe, .welcome-art .yt-host iframe { transform: scale(1.6); }
+/* As imagens do YouTube vêm em 4:3 com tarjas pretas: amplia para cortá-las. */
+.yt-frame { transform: scale(1.34); }
+.ex-hero { overflow: hidden; }

@@ -3,7 +3,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { CaretLeft, CoinVertical, Timer, House, CourtBasketball } from "@phosphor-icons/react";
 import Gate from "@/components/gate";
-import MotionFigure from "@/components/motion-figure";
+import { ClipFrame } from "@/components/exercise-media";
+import { clipFor } from "@/lib/clips";
 import { Coins, TabBar } from "@/components/ui";
 import { EXERCISES, SPORT_LABEL, findGroup } from "@/lib/catalog";
 
@@ -28,7 +29,7 @@ export default function GroupPage() {
               <div className="ex-list">
                 {EXERCISES.filter(e => e.group === group.id).map(e => (
                   <Link key={e.id} href={`/exercicio/${e.id}`} className="ex-card">
-                    <div className="ex-thumb"><MotionFigure motion={e.motion} label={e.title} /></div>
+                    <div className="ex-thumb"><ClipFrame clip={clipFor(e.id)} /></div>
                     <div>
                       <h3>{e.title}</h3>
                       <p>{e.summary}</p>

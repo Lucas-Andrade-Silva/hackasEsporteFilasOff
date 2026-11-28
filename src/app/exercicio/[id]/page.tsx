@@ -1,10 +1,12 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { CaretLeft, Play, Pause, Lightning } from "@phosphor-icons/react";
 import Gate from "@/components/gate";
-import MotionFigure from "@/components/motion-figure";
+import { ClipFrame } from "@/components/exercise-media";
+import { ClipCredit, YouTubeClip, type ClipHandle } from "@/components/youtube-clip";
+import { clipFor } from "@/lib/clips";
 import { Avatar, Coins, initials } from "@/components/ui";
 import { ATTEMPTS_PER_DAY, MISSION_BONUS, SPORT_LABEL, findExercise, findGroup } from "@/lib/catalog";
 import { attemptsToday, useAuth } from "@/lib/auth";
@@ -16,12 +18,17 @@ export default function ExercisePage() {
   const exercise = findExercise(id);
   const [playing, setPlaying] = useState(true);
   const [mission, setMission] = useState(false);
+  const video = useRef<ClipHandle>(null);
+  const toggle = () => {
+    if (playing) video.current?.pause(); else video.current?.play();
+  };
   useEffect(() => { setMission(new URLSearchParams(window.location.search).get("missao") === "1"); }, []);
 
   if (!exercise) {
     return <main className="dark"><div className="dark-shell"><p className="muted">Exercício não encontrado.</p><Link className="link-btn" href="/">Voltar</Link></div></main>;
   }
   const group = findGroup(exercise.group);
+  const clip = clipFor(exercise.id);
   const reward = mission ? Math.round(exercise.coins * MISSION_BONUS) : exercise.coins;
   const used = attemptsToday(activities, exercise.id);
   const best = activities.filter(a => a.exercise_id === exercise.id).reduce((m, a) => Math.max(m, Number(a.score)), 0);
@@ -31,7 +38,7 @@ export default function ExercisePage() {
       <div className="dark">
         <main className="dark-shell">
           <section className="ex-hero">
-            <MotionFigure motion={exercise.motion} label={exercise.title} />
+            <ClipFrame clip={clip} alt={exercise.title} />
             <div className="ex-hero-top">
               <button className="icon-btn" onClick={() => (window.history.length > 1 ? router.back() : router.push("/"))} aria-label="Voltar">
                 <CaretLeft size={22} weight="bold" />
@@ -52,12 +59,13 @@ export default function ExercisePage() {
           <ol className="ex-steps">{exercise.steps.map(s => <li key={s}>{s}</li>)}</ol>
 
           <div className="player">
-            <MotionFigure motion={exercise.motion} playing={playing} label={`Demonstração: ${exercise.title}`} />
+            <YouTubeClip ref={video} clip={clip} label={`Demonstração: ${exercise.title}`} onPlaying={setPlaying} />
             <span className="player-badge">Demonstração</span>
-            <button className="icon-btn player-ctrl" onClick={() => setPlaying(p => !p)} aria-label={playing ? "Pausar demonstração" : "Tocar demonstração"}>
+            <button className="icon-btn player-ctrl" onClick={toggle} aria-label={playing ? "Pausar demonstração" : "Tocar demonstração"}>
               {playing ? <Pause size={20} weight="fill" /> : <Play size={20} weight="fill" />}
             </button>
           </div>
+          <ClipCredit clip={clip} />
 
           <button className="btn btn-lime start" disabled aria-describedby="start-note" aria-label="Iniciar, em breve">
             <Play size={22} weight="fill" /> Iniciar <span className="soon">EM BREVE</span>
@@ -72,10 +80,10 @@ export default function ExercisePage() {
 
           <section className="battle" aria-label="Desafio de pontuação">
             <p className="ex-kicker" style={{ marginTop: 0 }}>Desafio</p>
-            <h2 className="t-title2" style={{ marginTop: 4 }}>Supere a marca MOVA</h2>
+            <h2 className="t-title2" style={{ marginTop: 4 }}>Supere a marca Atleta10</h2>
             <div className="battle-row">
               <div>
-                <div className="battle-face" aria-hidden>MOVA</div>
+                <div className="battle-face" aria-hidden><img src="/brand/icon-192.png" alt="" /></div>
                 <div className="battle-name">Referência</div>
                 <div className="battle-score">{exercise.referenceScore}</div>
               </div>
@@ -90,7 +98,7 @@ export default function ExercisePage() {
                 <div className="battle-score">{best}</div>
               </div>
             </div>
-            <p>A referência é uma meta do MOVA para este exercício, não a marca de um atleta real. Abaixo de {exercise.minScore} pontos a tentativa não vale e você pode refazer, até {ATTEMPTS_PER_DAY} vezes por dia.</p>
+            <p>A referência é uma meta do Atleta10 para este exercício, não a marca de um atleta real. Abaixo de {exercise.minScore} pontos a tentativa não vale e você pode refazer, até {ATTEMPTS_PER_DAY} vezes por dia.</p>
           </section>
         </main>
       </div>

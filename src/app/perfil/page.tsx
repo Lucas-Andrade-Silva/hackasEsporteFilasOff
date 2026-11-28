@@ -5,7 +5,7 @@ import {
 } from "@phosphor-icons/react";
 import Gate from "@/components/gate";
 import LeagueBadge from "@/components/league-badge";
-import { AppShell, Avatar, Coins, Segmented, SectionTitle } from "@/components/ui";
+import { AppShell, Avatar, Coins, Segmented, SectionTitle, Wordmark } from "@/components/ui";
 import {
   BADGES, EXERCISES, GOAL_LABEL, GROUPS, LEAGUE_TIERS, POSITIONS, SKILLS, SPACE_LABEL, SPORT_LABEL,
   WEEKLY_LABEL, YEARS_LABEL, sportsOf, type Sport,
@@ -259,7 +259,7 @@ function ProfileScreen({ profile }: { profile: Profile }) {
   return (
     <AppShell>
       <header className="topbar">
-        <span className="wordmark">MOVA</span>
+        <Wordmark />
         <Coins value={profile.coins} />
       </header>
       <section className="profile-top">

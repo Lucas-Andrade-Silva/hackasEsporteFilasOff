@@ -65,7 +65,7 @@ function League({ profile }: { profile: Profile }) {
     return (
       <section className="join-card">
         <span className="big-num" aria-hidden>20</span>
-        <span className="mission-tag"><GlobeHemisphereWest size={14} weight="fill" /> Liga MOVA</span>
+        <span className="mission-tag"><GlobeHemisphereWest size={14} weight="fill" /> Liga Atleta10</span>
         <h2>Dispute com quem está no seu nível</h2>
         <p>Você entra num grupo de até 20 pessoas com pontuação parecida com a sua. Cada exercício que você passa vale moedas, e as moedas sobem você no ranking e de divisão.</p>
         <button className="btn btn-lime" onClick={join} disabled={busy}>{busy ? "Entrando..." : "Entrar na liga"} <ArrowRight size={20} weight="bold" /></button>
@@ -140,8 +140,8 @@ function Friends() {
     flash("Você entrou no grupo");
   };
   const share = async (g: Group) => {
-    const text = `Entra no meu grupo "${g.name}" no MOVA com o código ${g.code}`;
-    if (navigator.share) { try { await navigator.share({ title: "MOVA", text, url: window.location.origin }); } catch { /* cancelado */ } }
+    const text = `Entra no meu grupo "${g.name}" no Atleta10 com o código ${g.code}`;
+    if (navigator.share) { try { await navigator.share({ title: "Atleta10", text, url: window.location.origin }); } catch { /* cancelado */ } }
     else { await navigator.clipboard.writeText(`${text} ${window.location.origin}`); flash("Convite copiado"); }
   };
   const leave = async (g: Group) => {

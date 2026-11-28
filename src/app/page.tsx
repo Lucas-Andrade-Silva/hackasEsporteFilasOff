@@ -3,8 +3,10 @@ import Link from "next/link";
 import { useState } from "react";
 import { Lightning, CoinVertical, Timer } from "@phosphor-icons/react";
 import Gate from "@/components/gate";
-import MotionFigure from "@/components/motion-figure";
-import { AppShell, Avatar, Coins, Segmented, SectionTitle } from "@/components/ui";
+import { ClipFrame } from "@/components/exercise-media";
+import { YouTubeClip } from "@/components/youtube-clip";
+import { clipFor, groupClip } from "@/lib/clips";
+import { AppShell, Avatar, Coins, Segmented, SectionTitle, Wordmark } from "@/components/ui";
 import {
   EXERCISES, MISSION_BONUS, SPORT_LABEL, dailyMission, groupsFor, sportsOf, type Sport,
 } from "@/lib/catalog";
@@ -20,7 +22,7 @@ function Home({ profile }: { profile: Profile }) {
   return (
     <AppShell>
       <header className="topbar">
-        <span className="wordmark">MOVA</span>
+        <Wordmark />
         <div className="row">
           <Coins value={profile.coins} />
           <Link href="/perfil" aria-label="Abrir perfil">
@@ -35,7 +37,7 @@ function Home({ profile }: { profile: Profile }) {
       </section>
 
       <Link href={`/exercicio/${mission.id}?missao=1`} className="mission" aria-label={`Missão do dia: ${mission.title}`}>
-        <MotionFigure motion={mission.motion} label={mission.title} />
+        <YouTubeClip clip={clipFor(mission.id)} label={mission.title} />
         <span className="mission-num" aria-hidden>{new Date().getDate().toString().padStart(2, "0")}</span>
         <div className="mission-body">
           <span className="mission-tag"><Lightning size={14} weight="fill" /> Missão do dia</span>
@@ -60,7 +62,7 @@ function Home({ profile }: { profile: Profile }) {
           const count = EXERCISES.filter(e => e.group === g.id).length;
           return (
             <Link key={g.id} href={`/treinos/${g.id}`} className="group-card">
-              <MotionFigure motion={g.motion} label={g.title} />
+              <ClipFrame clip={groupClip(g.id)} />
               <span className="group-count">{count} treinos</span>
               <h3>{g.title}</h3>
               <p>{g.tagline}</p>

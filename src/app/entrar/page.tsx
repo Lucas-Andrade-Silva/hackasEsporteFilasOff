@@ -34,7 +34,7 @@ export default function SignIn() {
       </div>
       <form className="flow-step" onSubmit={submit}>
         <p className="t-caps">De volta</p>
-        <h1 className="t-large">Entrar no MOVA</h1>
+        <h1 className="t-large">Entrar no Atleta10</h1>
         {!configured && <div style={{ marginBottom: 16 }}><SetupNotice /></div>}
         <div className="field">
           <label htmlFor="email">Email</label>
