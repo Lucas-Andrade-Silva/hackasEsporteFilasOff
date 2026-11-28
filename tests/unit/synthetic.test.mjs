@@ -1,0 +1,12 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {flightHeightCm,evaluateFixture,validateRequest,bestMarks,fixtureFrames,demoLeaderboard} from "../../src/engine/replay/synthetic.mjs";
+const key="00000000-0000-4000-8000-000000000000";
+test("analytical flight time",()=>assert.ok(Math.abs(flightHeightCm(500)-30.65625)<1e-8));
+test("rejects invalid time",()=>{for(const n of [0,-1,Infinity,NaN,2000])assert.throws(()=>flightHeightCm(n))});
+test("rejected fixture has no mark",()=>{const m=evaluateFixture("feet-cut");assert.equal(m.status,"rejected");assert.equal(m.value,null)});
+test("fixture is computed, uncertainty pending",()=>{const m=evaluateFixture("block-next");assert.equal(m.value,30.7);assert.equal(m.uncertainty,null);assert.equal(m.events.length,3)});
+test("rejects arbitrary score, unknown fixture and key",()=>{assert.equal(validateRequest({fixtureId:"block-base",idempotencyKey:key}),true);for(const b of [{fixtureId:"block-base",idempotencyKey:key,score:900},{fixtureId:"missing",idempotencyKey:key},{fixtureId:"block-base",idempotencyKey:"x"},null])assert.equal(validateRequest(b),false)});
+test("ranking excludes rejected, incompatible and other sport",()=>{const a=(fixtureId,id)=>({id,createdAt:"2026-11-26",rankingEligible:true,measurement:evaluateFixture(fixtureId)});const old=a("block-next","old");old.measurement.protocolVersion="old";assert.deepEqual(bestMarks([a("block-base","a"),a("feet-cut","b"),a("rebound-next","c"),a("block-next","d"),old],"volleyball").map(x=>x.id),["d","a"])});
+test("synthetic landmarks match the flight and rejected feet are absent",()=>{const f=fixtureFrames("block-next");assert.equal(f[0].landmarks.left_ankle.y,.88);assert.ok(f[16].landmarks.left_ankle.y<.88);assert.ok(f.every((x,i)=>i===0||x.timestampMs>f[i-1].timestampMs));assert.equal(fixtureFrames("feet-cut")[0].landmarks.left_ankle,undefined)});
+test("synthetic leaderboard updates with best mark only",()=>{const a=(fixtureId,id)=>({id,createdAt:"2026-11-26",rankingEligible:true,measurement:evaluateFixture(fixtureId)});const rows=demoLeaderboard([a("block-base","a"),a("block-next","b"),a("feet-cut","c")],"volleyball");assert.equal(rows.length,4);assert.equal(rows.filter(x=>x.isYou).length,1);assert.equal(rows.find(x=>x.isYou).position,2);assert.equal(demoLeaderboard([],"basketball").length,3)});
