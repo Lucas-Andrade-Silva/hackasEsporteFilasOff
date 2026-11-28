@@ -35,3 +35,5 @@ jobs:
           command -v psql
           psql -h 127.0.0.1 -U postgres -d mova_test -v ON_ERROR_STOP=1 -f tests/database/demo-schema.sql
           psql -h 127.0.0.1 -U postgres -d mova_test -v ON_ERROR_STOP=1 -f tests/database/demo-hardening.sql
+          createdb -h 127.0.0.1 -U postgres mova_app_v2
+          psql -h 127.0.0.1 -U postgres -d mova_app_v2 -v ON_ERROR_STOP=1 -f tests/database/app-v2.sql
